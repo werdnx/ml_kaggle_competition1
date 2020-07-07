@@ -1,0 +1,4 @@
+configure transmitter
+build docker image on the server
+create docker run script with external input and output folder and with folder with script
+create script for transferring python file by ssh and running docker on the server

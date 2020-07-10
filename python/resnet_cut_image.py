@@ -47,18 +47,29 @@ def prepare_data_parallel(img_labels):
     return X, y
 
 
-def prepare_data(img_labels, is_train):
-    m = len(img_labels)
+def additional_positive_cases():
     additional_len = 0
     train_images_pos = [(DIR_POS + i, i) for i in os.listdir(DIR_POS)]
-    if is_train:
-        if len(train_images_pos) > 0:
-            additional_len = len(train_images_pos)
+    if len(train_images_pos) > 0:
+        additional_len = len(train_images_pos)
 
     logging.info("additional len % s", additional_len)
+    X = np.zeros((additional_len, ROWS, COLS, CHANNELS), dtype=np.uint8)
+    y = np.zeros((1, additional_len), dtype=np.uint8)
+    count = 0
+    if len(train_images_pos) > 0:
+        for i, image_file in enumerate(train_images_pos):
+            X[count, :] = read_image(image_file[0])
+            y[0, count] = 1
+            count = count + 1
+    return X, y
+
+
+def prepare_data(img_labels):
+    m = len(img_labels)
     logging.info("start processing of %s records", m)
-    X = np.zeros((m + additional_len, ROWS, COLS, CHANNELS), dtype=np.uint8)
-    y = np.zeros((1, m + additional_len), dtype=np.uint8)
+    X = np.zeros((m, ROWS, COLS, CHANNELS), dtype=np.uint8)
+    y = np.zeros((1, m), dtype=np.uint8)
     count = 0
     for i, item in enumerate(img_labels):
         X[count, :] = read_image(DIR + item[0] + '.jpg')
@@ -69,12 +80,6 @@ def prepare_data(img_labels, is_train):
         count = count + 1
         if count % 100 == 0:
             logging.info("process load data, iter = %s", count)
-    if is_train:
-        if len(train_images_pos) > 0:
-            for i, image_file in enumerate(train_images_pos):
-                X[count, :] = read_image(image_file[0])
-                y[0, count] = 1
-                count = count + 1
     return X, y
 
 
@@ -106,19 +111,20 @@ def run():
     adam = Adam(lr=0.0001)
     model.compile(optimizer=adam, loss='categorical_crossentropy', metrics=['accuracy'])
 
+    add_train_set_x, add_train_set_y = additional_positive_cases()
     train_chunks = chunks(train, CHUNK_SIZE)
+    add_x_chunks = np.array_split(add_train_set_x, len(train_chunks))
+    add_y_chunks = np.array_split(add_train_set_y, len(train_chunks))
     for train_chunk in train_chunks:
-        train_set_x, train_set_y = prepare_data(train_chunk, True)
-        X_train = train_set_x / 255
-        logging.info("start reshape y train")
-        Y_train = convert_to_one_hot(train_set_y, CLASSES).T
-        logging.info("number of training examples = %s", X_train.shape[0])
-        logging.info("X_train shape: %s", X_train.shape)
-        logging.info("Y_train shape: %s", Y_train.shape)
-        model.fit(X_train, Y_train, epochs=3, batch_size=8)
+        train_set_x, train_set_y = prepare_data(train_chunk)
+        fit_iteration(model, train_set_x, train_set_y)
+
+    #logging.info("fit additional positive cases")
+    #train_set_x, train_set_y = additional_positive_cases()
+    #fit_iteration(model,train_set_x,train_set_y)
 
     logging.info("start prepare test")
-    test_set_x, test_set_y = prepare_data(test, False)
+    test_set_x, test_set_y = prepare_data(test)
     X_test = test_set_x / 255
     logging.info("start reshape y test")
     Y_test = convert_to_one_hot(test_set_y, CLASSES).T
@@ -129,9 +135,19 @@ def run():
     preds = model.evaluate(X_test, Y_test)
     logging.info("Loss = %s" + str(preds[0]))
     logging.info("Test Accuracy = %s" + str(preds[1]))
+    model.save('/input/model1_50rsnet_256_256_10_epoch3')
     logging.info("model saved")
-    model.save('/input/model1_50rsnet_256_256_10_epoch2')
     logging.info("preds ")
     for x in range(len(preds)):
         print (preds[x])
     model.summary()
+
+
+def fit_iteration(model, train_set_x, train_set_y):
+    X_train = train_set_x / 255
+    logging.info("start reshape y train")
+    Y_train = convert_to_one_hot(train_set_y, CLASSES).T
+    logging.info("number of training examples = %s", X_train.shape[0])
+    logging.info("X_train shape: %s", X_train.shape)
+    logging.info("Y_train shape: %s", Y_train.shape)
+    model.fit(X_train, Y_train, epochs=3, batch_size=8)

@@ -46,7 +46,7 @@ def main():
     print("--------------------------------Run main!------------------------------------")
     images = read_data("/input/test.csv")
     #adam = Adam(lr=0.0001)
-    model = load_model('/input/model1_50rsnet_256_256_10_epoch')
+    model = load_model('/input/model1_50rsnet_256_256_10_epoch3')
     #model.compile(optimizer=adam, loss='categorical_crossentropy', metrics=['accuracy'])
     for image in images:
         test_set = prepare_data(image)

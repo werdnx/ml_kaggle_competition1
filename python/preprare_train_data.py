@@ -16,9 +16,9 @@ def read_csv(path):
                 line_count += 1
             else:
                 if row[7] == "0":
-                    negative.append((row[0], row[7]))
+                    negative.append((row[0], int(row[7])))
                 else:
-                    positive.append((row[0], row[7]))
+                    positive.append((row[0], int(row[7])))
                 line_count += 1
         print('Processed lines.', line_count)
         return positive, negative
@@ -26,12 +26,12 @@ def read_csv(path):
 
 def split_data():
     pos, neg = read_csv("/input/train.csv")
-    print("positive cases " + len(pos))
-    print("negative cases " + len(neg))
+    print("positive cases " + str(len(pos)))
+    print("negative cases " + str(len(neg)))
     train_pos, test_pos = train_test_split(pos, test_size=0.33, random_state=42)
     train_neg, test_neg = train_test_split(neg, test_size=0.33, random_state=42)
     train = train_neg + train_pos
     shuffle(train)
     test = test_neg + test_pos
     shuffle(test)
-    return train[:100], test[:100]
+    return train, test

@@ -8,7 +8,7 @@ import numpy as np
 # from functools import partial
 
 IN_DIR = '/media/3tstor/ml/IdeaProjects/ml_kaggle_competition1/input/jpeg/train256/'
-OUT_DIR = '/media/3tstor/ml/IdeaProjects/ml_kaggle_competition1/input/jpeg/train512_pos/'
+OUT_DIR = '/media/3tstor/ml/IdeaProjects/ml_kaggle_competition1/input/jpeg/train256_pos/'
 
 
 def read_csv(path):
@@ -58,7 +58,7 @@ def create_rotated_image(image_file, angle):
 
 def main():
     pos_images = read_csv("/media/3tstor/ml/IdeaProjects/ml_kaggle_competition1/input/train.csv")
-    prepare_img(pos_images[:10])
+    prepare_img(pos_images)
     # four_split = np.array_split(train_images, 4)
     # with Pool(processes=cpu_count()) as p:
     # for array in train_images:

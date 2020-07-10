@@ -21,6 +21,8 @@ COLS = 256
 CHANNELS = 3
 CLASSES = 2
 DIR = '/input/jpeg/train256/'
+DIR_POS = '/input/jpeg/train256_pos/'
+CHUNK_SIZE = 1500
 
 
 def read_image(file_path):
@@ -45,17 +47,34 @@ def prepare_data_parallel(img_labels):
     return X, y
 
 
-def prepare_data(img_labels):
+def prepare_data(img_labels, is_train):
     m = len(img_labels)
+    additional_len = 0
+    train_images_pos = [(DIR_POS + i, i) for i in os.listdir(DIR_POS)]
+    if is_train:
+        if len(train_images_pos) > 0:
+            additional_len = len(train_images_pos)
+
+    logging.info("additional len % s", additional_len)
     logging.info("start processing of %s records", m)
-    X = np.zeros((m, ROWS, COLS, CHANNELS), dtype=np.uint8)
-    y = np.zeros((1, m), dtype=np.uint8)
+    X = np.zeros((m + additional_len, ROWS, COLS, CHANNELS), dtype=np.uint8)
+    y = np.zeros((1, m + additional_len), dtype=np.uint8)
     count = 0
     for i, item in enumerate(img_labels):
-        X[i, :] = read_image(DIR + item[0] + '.jpg')
+        X[count, :] = read_image(DIR + item[0] + '.jpg')
+        if item[1] == 1:
+            y[0, count] = 1
+        else:
+            y[0, count] = 0
         count = count + 1
         if count % 100 == 0:
             logging.info("process load data, iter = %s", count)
+    if is_train:
+        if len(train_images_pos) > 0:
+            for i, image_file in enumerate(train_images_pos):
+                X[count, :] = read_image(image_file[0])
+                y[0, count] = 1
+                count = count + 1
     return X, y
 
 
@@ -87,9 +106,9 @@ def run():
     adam = Adam(lr=0.0001)
     model.compile(optimizer=adam, loss='categorical_crossentropy', metrics=['accuracy'])
 
-    train_chunks = chunks(train, 10)
+    train_chunks = chunks(train, CHUNK_SIZE)
     for train_chunk in train_chunks:
-        train_set_x, train_set_y = prepare_data(train_chunk)
+        train_set_x, train_set_y = prepare_data(train_chunk, True)
         X_train = train_set_x / 255
         logging.info("start reshape y train")
         Y_train = convert_to_one_hot(train_set_y, CLASSES).T
@@ -99,7 +118,7 @@ def run():
         model.fit(X_train, Y_train, epochs=3, batch_size=8)
 
     logging.info("start prepare test")
-    test_set_x, test_set_y = prepare_data(test)
+    test_set_x, test_set_y = prepare_data(test, False)
     X_test = test_set_x / 255
     logging.info("start reshape y test")
     Y_test = convert_to_one_hot(test_set_y, CLASSES).T

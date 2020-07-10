@@ -1,4 +1,13 @@
-configure transmitter
-build docker image on the server
-create docker run script with external input and output folder and with folder with script
-create script for transferring python file by ssh and running docker on the server
+create simple model
+improve by focus image
+exclude duplicates
+improve by learn on different image sizes
+improve by removing hair
+make gray?
+add other features, aggregated result from several models
+
+2x scale for videos with less than 300 pixels wider side
+no rescale for videos with wider side between 300 and 1000
+0.5x scale for videos with wider side > 1000 pixels
+0.33x scale for videos with wider side > 1900 pixels
+learn model by parts but with better image quality

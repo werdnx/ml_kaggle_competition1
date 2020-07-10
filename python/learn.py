@@ -1,10 +1,11 @@
-from convolutional import run_main
 import time
+from resnet_cut_image import run
+
 
 def main():
     start = time.time()
     print("--------------------------------Run main!------------------------------------")
-    run_main()
+    run()
     print("--------------------------------End main!------------------------------------")
     end = time.time()
     total = end -start

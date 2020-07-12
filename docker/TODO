@@ -1,6 +1,15 @@
+512
+remove hair
+additional params model
+
+
 create simple model +
+ImageDataGenerator
+efficiencynet https://www.kaggle.com/arjunrao2000/beginners-guide-efficientnet-with-keras
 create more data with marked 1, try different sizes
 extract square with nevus
+
+try efficiencynet, resnet 152
 
 improve by focus image
 exclude duplicates

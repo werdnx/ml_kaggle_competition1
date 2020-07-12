@@ -27,8 +27,10 @@ def prepare_img(images):
 
 
 def main():
-    train_images = [(IN_DIR + i, i) for i in os.listdir(IN_DIR)]
-    prepare_img(train_images)
+    train_images_all = [(IN_DIR + i, i) for i in os.listdir(IN_DIR)]
+    train_images_512 = [(IN_DIR + i, i) for i in os.listdir(OUT_DIR)]
+    to_proccess = list(set(train_images_all) - set(train_images_512))
+    prepare_img(to_proccess)
     #four_split = np.array_split(train_images, 4)
     # with Pool(processes=cpu_count()) as p:
     #for array in train_images:

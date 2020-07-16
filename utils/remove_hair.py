@@ -26,7 +26,7 @@ def hair_remove(image):
 
 def main():
     train_images_512 = [(IN_DIR + i, i) for i in os.listdir(IN_DIR)]
-    for i, image_file in enumerate(train_images_512[:5]):
+    for i, image_file in enumerate(train_images_512):
         img = cv2.imread(image_file[0], cv2.IMREAD_COLOR)
         no_hair_img = hair_remove(img)
         cv2.imwrite(OUT_DIR + image_file[1], no_hair_img)

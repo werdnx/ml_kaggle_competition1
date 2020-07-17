@@ -17,14 +17,20 @@ def run():
     train_df['image_name'] = train_df['image_name'].astype(str) + '.jpg'
     train_df.head()
 
+    batch_size_ = batch_size = 30
+    #size of images
+    target_size_ = 128
+    steps_per_epoch_ = len(train_df)/batch_size
+    validation_steps_ = steps_per_epoch_ / 5
     train_datagen = ImageDataGenerator(
         rescale=1 / 255,
         validation_split=0.10,
         rotation_range=40,
         width_shift_range=0.2,
         height_shift_range=0.2,
+        brightness_range=[0.2, 1.0],
+        zoom_range=[0.5, 1.0],
         shear_range=0.2,
-        zoom_range=0.2,
         horizontal_flip=True,
         vertical_flip=True,
         fill_mode='nearest'
@@ -34,9 +40,9 @@ def run():
         directory=train_dir,
         x_col="image_name",
         y_col="target",
-        target_size=(512, 512),
+        target_size=(target_size_, target_size_),
         subset="training",
-        batch_size=2,
+        batch_size = batch_size_,
         shuffle=True,
         class_mode="binary"
     )
@@ -45,15 +51,15 @@ def run():
         directory=train_dir,
         x_col="image_name",
         y_col="target",
-        target_size=(512, 512),
+        target_size=(target_size_, target_size_),
         subset="validation",
-        batch_size=2,
+        batch_size = batch_size_,
         shuffle=True,
         class_mode="binary"
     )
     efficient_net = EfficientNetB3(
         weights='imagenet',
-        input_shape=(512, 512, 3),
+        input_shape=(target_size_, target_size_, 3),
         include_top=False,
         pooling='max'
     )
@@ -65,12 +71,13 @@ def run():
     model.add(Dense(units=1, activation='sigmoid'))
     model.summary()
     model.compile(optimizer=Adam(lr=0.0001), loss='binary_crossentropy', metrics=['accuracy'])
+    #steps_per_epoch = train_size/ batches
     history = model.fit(
         train_generator,
-        epochs=50,
-        steps_per_epoch=15,
+        epochs=36,
+        steps_per_epoch=steps_per_epoch_,
         validation_data=val_generator,
-        validation_steps=7,
+        validation_steps=validation_steps_,
         verbose=1,
     )
-    model.save('/output/model1_EfficientNetB3_gen')
+    model.save('/output/model1_EfficientNetB3_gen2')

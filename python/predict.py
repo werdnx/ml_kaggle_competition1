@@ -47,18 +47,19 @@ def main():
     print("--------------------------------Run main!------------------------------------")
     images = read_data("/input/test.csv")
     #adam = Adam(lr=0.0001)
-    model = load_model('/output/model1_EfficientNetB3_gen')
+    model = load_model('/output/model1_EfficientNetB3_gen2')
     #model.compile(optimizer=adam, loss='categorical_crossentropy', metrics=['accuracy'])
+    i = 0
     for image in images:
         test_set = prepare_data(image)
         x_test = test_set / 255
         result = model.predict(x_test)
         rows.append((image, np.argmax(result)))
-        print(np.argmax(result))
-        #logging("result for image %s is %s", image, np.argmax(result))
+        i = i + 1
+        logging("result for image %s is %s, num = %s", image, np.argmax(result), str(i))
 
     #exit(0)
-    filename = "/output/result3.csv"
+    filename = "/output/result4.csv"
     # writing to csv file
     with open(filename, 'w') as csvfile:
         # creating a csv writer object

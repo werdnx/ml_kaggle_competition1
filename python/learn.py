@@ -1,5 +1,5 @@
 import time
-from resnet_cut_image import run
+from gen_learn import run
 
 
 def main():

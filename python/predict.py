@@ -6,11 +6,12 @@ import csv
 import numpy as np
 import cv2
 from keras.optimizers import SGD, Adam
+from efficientnet.keras import EfficientNetB3
 
-ROWS = 256
-COLS = 256
+ROWS = 512
+COLS = 512
 CHANNELS = 3
-DIR = '/input/jpeg/test256/'
+DIR = '/input/jpeg/test512_nohair/'
 
 
 def read_data(path):
@@ -46,7 +47,7 @@ def main():
     print("--------------------------------Run main!------------------------------------")
     images = read_data("/input/test.csv")
     #adam = Adam(lr=0.0001)
-    model = load_model('/input/model1_50rsnet_256_256_10_epoch3')
+    model = load_model('/output/model1_EfficientNetB3_gen')
     #model.compile(optimizer=adam, loss='categorical_crossentropy', metrics=['accuracy'])
     for image in images:
         test_set = prepare_data(image)
@@ -57,7 +58,7 @@ def main():
         #logging("result for image %s is %s", image, np.argmax(result))
 
     #exit(0)
-    filename = "/output/result.csv"
+    filename = "/output/result3.csv"
     # writing to csv file
     with open(filename, 'w') as csvfile:
         # creating a csv writer object

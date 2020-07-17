@@ -2,8 +2,8 @@ import os
 import numpy as np
 import cv2
 
-IN_DIR = '/media/3tstor/ml/IdeaProjects/ml_kaggle_competition1/input/jpeg/train512/'
-OUT_DIR = '/media/3tstor/ml/IdeaProjects/ml_kaggle_competition1/input/jpeg/train512_nohair/'
+IN_DIR = '/media/3tstor/ml/IdeaProjects/ml_kaggle_competition1/input/jpeg/test512/'
+OUT_DIR = '/media/3tstor/ml/IdeaProjects/ml_kaggle_competition1/input/jpeg/test512_nohair/'
 
 def hair_remove(image):
     # convert image to grayScale

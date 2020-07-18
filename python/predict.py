@@ -7,9 +7,10 @@ import numpy as np
 import cv2
 from keras.optimizers import SGD, Adam
 from efficientnet.keras import EfficientNetB3
+from gen_learn import iteration
 
-ROWS = 512
-COLS = 512
+TARGET_ROWS = 128
+TARGET_COLS = 128
 CHANNELS = 3
 DIR = '/input/jpeg/test512_nohair/'
 
@@ -31,8 +32,9 @@ def read_data(path):
 
 
 def prepare_data(img_label):
-    X = np.zeros((1, ROWS, COLS, CHANNELS), dtype=np.uint8)
-    X[0, :] = read_image(DIR + img_label + '.jpg')
+    X = np.zeros((1, TARGET_ROWS, TARGET_ROWS, CHANNELS), dtype=np.uint8)
+    img = read_image(DIR + img_label + '.jpg')
+    X[0, :] = cv2.resize(img, (TARGET_ROWS, TARGET_COLS), interpolation=cv2.INTER_CUBIC)
     return X
 
 
@@ -47,7 +49,7 @@ def main():
     print("--------------------------------Run main!------------------------------------")
     images = read_data("/input/test.csv")
     #adam = Adam(lr=0.0001)
-    model = load_model('/output/model1_EfficientNetB3_gen2')
+    model = load_model('/output/model1_EfficientNetB3_gen'+iteration)
     #model.compile(optimizer=adam, loss='categorical_crossentropy', metrics=['accuracy'])
     i = 0
     for image in images:
@@ -56,10 +58,10 @@ def main():
         result = model.predict(x_test)
         rows.append((image, np.argmax(result)))
         i = i + 1
-        logging("result for image %s is %s, num = %s", image, np.argmax(result), str(i))
+        print (np.argmax(result))
 
     #exit(0)
-    filename = "/output/result4.csv"
+    filename = '/output/result' + iteration+'.csv'
     # writing to csv file
     with open(filename, 'w') as csvfile:
         # creating a csv writer object

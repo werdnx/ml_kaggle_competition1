@@ -8,13 +8,27 @@ from keras.optimizers import Adam
 import cv2
 import pandas as pd
 
+iteration = '5'
 
 def run():
     train_dir = '/input/jpeg/train512_nohair'
-    test_dir = '../input/jpeg/test512_nohair'
     train_df = pd.read_csv('/input/train.csv')
     train_df['target'] = train_df['target'].astype('str')
-    train_df['image_name'] = train_df['image_name'].astype(str) + '.jpg'
+    train_df['image_name'] = train_df['image_name'].astype(str)
+    pos_df0 = train_df[train_df['target'] == '1']
+    pos_df0['image_name'] = pos_df0['image_name'] + '_0.jpg'
+    pos_df1 = train_df[train_df['target'] == '1']
+    pos_df1['image_name'] = pos_df1['image_name'] + '_1.jpg'
+    pos_df2 = train_df[train_df['target'] == '1']
+    pos_df2['image_name'] = pos_df2['image_name'] + '_2.jpg'
+    pos_df3 = train_df[train_df['target'] == '1']
+    pos_df3['image_name'] = pos_df3['image_name'] + '_3.jpg'
+
+    train_df['image_name'] = train_df['image_name'] + '.jpg'
+
+    frames = [pos_df1, train_df, pos_df0, pos_df2, pos_df3]
+
+    train_df = pd.concat(frames)
     train_df.head()
 
     batch_size_ = batch_size = 30
@@ -80,4 +94,4 @@ def run():
         validation_steps=validation_steps_,
         verbose=1,
     )
-    model.save('/output/model1_EfficientNetB3_gen2')
+    model.save('/output/model1_EfficientNetB3_gen' + iteration)

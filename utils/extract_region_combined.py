@@ -1,6 +1,7 @@
 import numpy as np
 import cv2 as cv
 import os
+import multiprocessing as mp
 
 
 # delta_x - percentage delta
@@ -17,7 +18,7 @@ def extract_crop(img, delta_x, delta_y):
     # x
     width = img.shape[1]
     channels = img.shape[2]
-    x_min_len =  int(width * (float(10) / 100))
+    x_min_len = int(width * (float(10) / 100))
     y_min_len = int(height * (float(10) / 100))
     for contour in contours:
         y, x, x_width, y_height = cv.boundingRect(contour)
@@ -68,17 +69,17 @@ def rect_crop(img, delta_x, delta_y):
     return x_top_left, y_top_left, x_bot_right, y_bot_right
 
 
-
 def combined_crop(img):
     is_croped, contour = extract_crop(img, 10, 5)
     if is_croped == True:
         x_top_left, y_top_left, x_bot_right, y_bot_right = find_rectangle(contour)
     else:
         x_top_left, y_top_left, x_bot_right, y_bot_right = rect_crop(img, 20, 20)
-    #draw cropped rectangle
-    #cv.rectangle(img, (x_top_left, y_top_left), (x_bot_right, y_bot_right), (0, 255, 0), 3)
-    #crop image
-    crop_img = img[y_top_left:y_top_left + (y_bot_right - y_top_left), x_top_left:x_top_left + (x_bot_right - x_top_left)]
+    # draw cropped rectangle
+    # cv.rectangle(img, (x_top_left, y_top_left), (x_bot_right, y_bot_right), (0, 255, 0), 3)
+    # crop image
+    crop_img = img[y_top_left:y_top_left + (y_bot_right - y_top_left),
+               x_top_left:x_top_left + (x_bot_right - x_top_left)]
     return crop_img
 
 
@@ -96,6 +97,34 @@ def hair_remove(image):
     return final_image
 
 
+def resize(img, xy):
+    new_height = min(xy, img.shape[0])
+    new_width = min(xy, img.shape[1])
+    return cv.resize(img, (new_height, new_width), interpolation=cv.INTER_CUBIC)
+
+
+def process_imgs(imgs):
+    for i, image_file in enumerate(imgs):
+        process_one_img(image_file)
+
+
+def process_one_img(image_file):
+    print('start process file ' + image_file[1])
+    img = cv.imread(image_file[0], cv.IMREAD_COLOR)
+    # if dimension > 2k resize 2k
+    if img.shape[0] > 2000 or img.shape[1] > 2000:
+        print('img too big, resize it ' + image_file[1])
+        img = resize(img, 2000)
+    print('remove hair ' + image_file[1])
+    img = hair_remove(img)
+    print('crop ' + image_file[1])
+    croped_img = combined_crop(img)
+    # ???resize???
+    if croped_img.shape[0] > 512 or croped_img.shape[1] > 512:
+        croped_img = resize(croped_img, 512)
+    cv.imwrite(OUT_DIR + image_file[1], croped_img)
+    print('process file ' + image_file[1])
+
 
 IN_DIR = '/Users/dmitrenkoandrey/PycharmProjects/ml_kaggle_competition1/temp/in/'
 OUT_DIR = '/Users/dmitrenkoandrey/PycharmProjects/ml_kaggle_competition1/temp/out/'
@@ -103,26 +132,11 @@ OUT_DIR = '/Users/dmitrenkoandrey/PycharmProjects/ml_kaggle_competition1/temp/ou
 
 def main():
     imgs = [(IN_DIR + i, i) for i in os.listdir(IN_DIR)]
-    for i, image_file in enumerate(imgs):
-        print('start process file ' + image_file[1])
-        img = cv.imread(image_file[0], cv.IMREAD_COLOR)
-        #if dimension > 2k resize 2k
-        if img.shape[0] > 2000 or img.shape[1] > 2000:
-            print('img too big, resize it ' + image_file[1])
-            new_height = min(2000, img.shape[0])
-            new_width = min(2000, img.shape[1])
-            img = cv.resize(img, (new_height, new_width), interpolation=cv.INTER_CUBIC)
-        print('remove hair ' + image_file[1])
-        img = hair_remove(img)
-        print('crop ' + image_file[1])
-        croped_img = combined_crop(img)
-        #???resize???
-        if croped_img.shape[0] > 512 or croped_img.shape[1] > 512:
-            new_height = min(512, croped_img.shape[0])
-            new_width = min(512, croped_img.shape[1])
-            croped_img = cv.resize(croped_img, (new_height, new_width), interpolation=cv.INTER_CUBIC)
-        cv.imwrite(OUT_DIR + image_file[1], croped_img)
-        print('process file ' + image_file[1])
+    pool = mp.Pool()
+    pool = mp.Pool(processes=4)
+    outputs = pool.map(process_one_img, imgs)
+    pool.close()
+    # process_imgs(imgs)
 
 
 if __name__ == "__main__":

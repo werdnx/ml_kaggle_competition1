@@ -9,7 +9,8 @@ import cv2
 import pandas as pd
 import time
 
-iteration = '5'
+iteration = '6'
+
 
 def run():
     train_dir = '/input/jpeg/train512_nohair'
@@ -17,37 +18,27 @@ def run():
     train_df['target'] = train_df['target'].astype('str')
     train_df['image_name'] = train_df['image_name'].astype(str)
 
-    pos_df0 = train_df[train_df['target'] == '1']
-    pos_df0['image_name'] = pos_df0['image_name'] + '_0.jpg'
-    pos_df1 = train_df[train_df['target'] == '1']
-    pos_df1['image_name'] = pos_df1['image_name'] + '_1.jpg'
-    pos_df2 = train_df[train_df['target'] == '1']
-    pos_df2['image_name'] = pos_df2['image_name'] + '_2.jpg'
-    pos_df3 = train_df[train_df['target'] == '1']
-    pos_df3['image_name'] = pos_df3['image_name'] + '_3.jpg'
+    add_df = train_df.copy()
+    add_df = add_df.iloc[0:0]
+    for i in range(0, 30):
+        pos_df_new = train_df[train_df['target'] == '1'].copy()
+        pos_df_new['image_name'] = pos_df_new['image_name'] + '_' + str(i)
+        frames = [add_df, pos_df_new]
+        add_df = pd.concat(frames)
 
-    pos_df4 = train_df[train_df['target'] == '1']
-    pos_df4['image_name'] = pos_df4['image_name'] + '_4.jpg'
-    pos_df5 = train_df[train_df['target'] == '1']
-    pos_df5['image_name'] = pos_df5['image_name'] + '_5.jpg'
-    pos_df6 = train_df[train_df['target'] == '1']
-    pos_df6['image_name'] = pos_df6['image_name'] + '_6.jpg'
-    pos_df7 = train_df[train_df['target'] == '1']
-    pos_df7['image_name'] = pos_df7['image_name'] + '_7.jpg'
-
-    train_df['image_name'] = train_df['image_name'] + '.jpg'
-
-    frames = [pos_df1, train_df, pos_df0, pos_df2, pos_df3, pos_df4, pos_df5, pos_df6, pos_df7]
-
+    frames = [train_df, add_df]
     train_df = pd.concat(frames)
-    train_df.head()
+    train_df['image_name'] = train_df['image_name'] + '.jpg'
+    train_df = train_df.sample(frac=1)
+    print (train_df.head())
     print("len of target = 1: " + str(len(train_df[train_df["target"] == '1'])))
+    print("len of target = 0: " + str(len(train_df[train_df["target"] == '0'])))
     time.sleep(60)
 
     batch_size_ = batch_size = 30
-    #size of images
+    # size of images
     target_size_ = 128
-    steps_per_epoch_ = len(train_df)/batch_size
+    steps_per_epoch_ = len(train_df) / batch_size
     validation_steps_ = steps_per_epoch_ / 5
     train_datagen = ImageDataGenerator(
         rescale=1 / 255,
@@ -56,7 +47,7 @@ def run():
         width_shift_range=0.2,
         height_shift_range=0.2,
         brightness_range=[0.2, 1.0],
-        zoom_range=[0.5, 1.0],
+        #zoom_range=[0.5, 1.0],
         shear_range=0.2,
         horizontal_flip=True,
         vertical_flip=True,
@@ -69,7 +60,7 @@ def run():
         y_col="target",
         target_size=(target_size_, target_size_),
         subset="training",
-        batch_size = batch_size_,
+        batch_size=batch_size_,
         shuffle=True,
         class_mode="binary"
     )
@@ -80,7 +71,7 @@ def run():
         y_col="target",
         target_size=(target_size_, target_size_),
         subset="validation",
-        batch_size = batch_size_,
+        batch_size=batch_size_,
         shuffle=True,
         class_mode="binary"
     )
@@ -98,10 +89,10 @@ def run():
     model.add(Dense(units=1, activation='sigmoid'))
     model.summary()
     model.compile(optimizer=Adam(lr=0.0001), loss='binary_crossentropy', metrics=['accuracy'])
-    #steps_per_epoch = train_size/ batches
+    # steps_per_epoch = train_size/ batches
     history = model.fit(
         train_generator,
-        epochs=36,
+        epochs=25,
         steps_per_epoch=steps_per_epoch_,
         validation_data=val_generator,
         validation_steps=validation_steps_,

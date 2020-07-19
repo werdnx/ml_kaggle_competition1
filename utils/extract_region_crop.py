@@ -6,6 +6,7 @@ def find_max_contor(p_contours):
     max_contour = p_contours[0]
     max_len = len(p_contours[0])
     for contour in p_contours:
+        y, x, width, height = cv.boundingRect(contour)
         if len(contour) > max_len:
             max_len = len(contour)
             max_contour = contour
@@ -30,7 +31,8 @@ def find_rectangle(contour):
 
     return x_top_left - delta, y_top_left - delta, x_bot_right + delta, y_bot_right + delta
 
-img = cv.imread('/Users/dmitrenkoandrey/PycharmProjects/ml_kaggle_competition1/temp/ISIC_0052212.jpg')
+
+img = cv.imread('/Users/dmitrenkoandrey/PycharmProjects/ml_kaggle_competition1/temp/ISIC_0867357.jpg')
 imgray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
 ret, thresh = cv.threshold(imgray, 127, 255, 0)
 contours, hierarchy = cv.findContours(thresh, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
@@ -40,12 +42,10 @@ contours, hierarchy = cv.findContours(thresh, cv.RETR_TREE, cv.CHAIN_APPROX_SIMP
 cnt = find_max_contor(contours)
 
 x_top_left, y_top_left, x_bot_right, y_bot_right = find_rectangle(cnt)
-crop_img = img[y_top_left:y_top_left+(y_bot_right-y_top_left), x_top_left:x_top_left+(x_bot_right-x_top_left)]
+# crop_img = img[y_top_left:y_top_left+(y_bot_right-y_top_left), x_top_left:x_top_left+(x_bot_right-x_top_left)]
 
 
-#cv.drawContours(img, [cnt], 0, (0, 255, 0), 3)
-#cv.rectangle(img,(x_top_left,y_top_left),(x_bot_right,y_bot_right),(0,255,0),3)
-#cv.imwrite('/Users/dmitrenkoandrey/PycharmProjects/ml_kaggle_competition1/temp/ISIC_0052212_1.jpg', img)
-cv.imwrite('/Users/dmitrenkoandrey/PycharmProjects/ml_kaggle_competition1/temp/ISIC_0052212_1_croped.jpg', crop_img)
-
-
+# cv.drawContours(img, [cnt], 0, (0, 255, 0), 3)
+cv.rectangle(img, (x_top_left, y_top_left), (x_bot_right, y_bot_right), (0, 255, 0), 3)
+cv.imwrite('/Users/dmitrenkoandrey/PycharmProjects/ml_kaggle_competition1/temp/ISIC_0867357_crv1_1.jpg', img)
+# cv.imwrite('/Users/dmitrenkoandrey/PycharmProjects/ml_kaggle_competition1/temp/ISIC_0867357_crv1_2.jpg', crop_img)

@@ -1,4 +1,4 @@
-orig image -> croped image -> no hair image
+orig image -> no hair image -> croped image
 1. no_hair
 2. counter extract or crop by aprox rectangle
 !try without imagenet weights

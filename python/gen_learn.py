@@ -5,11 +5,15 @@ from keras import callbacks
 from keras.models import Sequential
 from keras.layers import Dense
 from keras.optimizers import Adam
+from keras.layers import Dense, Dropout, Flatten, Conv2D, MaxPool2D, GlobalMaxPooling2D, GlobalAveragePooling2D, BatchNormalization
+from keras.models import Sequential, Model, load_model
 import cv2
 import pandas as pd
 import time
 
-iteration = '6'
+iteration = '7'
+
+CLASSES = 2
 
 
 def run():
@@ -33,11 +37,11 @@ def run():
     print (train_df.head())
     print("len of target = 1: " + str(len(train_df[train_df["target"] == '1'])))
     print("len of target = 0: " + str(len(train_df[train_df["target"] == '0'])))
-    time.sleep(60)
+    time.sleep(10)
 
-    batch_size_ = batch_size = 30
+    batch_size_ = batch_size = 2
     # size of images
-    target_size_ = 128
+    target_size_ = 512
     steps_per_epoch_ = len(train_df) / batch_size
     validation_steps_ = steps_per_epoch_ / 5
     train_datagen = ImageDataGenerator(
@@ -62,7 +66,7 @@ def run():
         subset="training",
         batch_size=batch_size_,
         shuffle=True,
-        class_mode="binary"
+        class_mode="categorical"
     )
     val_generator = train_datagen.flow_from_dataframe(
         dataframe=train_df,
@@ -73,26 +77,26 @@ def run():
         subset="validation",
         batch_size=batch_size_,
         shuffle=True,
-        class_mode="binary"
+        class_mode="categorical"
     )
     efficient_net = EfficientNetB3(
         weights='imagenet',
         input_shape=(target_size_, target_size_, 3),
-        include_top=False,
-        pooling='max'
+        include_top=False
+        #pooling='max'
     )
-
     model = Sequential()
     model.add(efficient_net)
-    model.add(Dense(units=120, activation='relu'))
-    model.add(Dense(units=120, activation='relu'))
-    model.add(Dense(units=1, activation='sigmoid'))
+    model.add(GlobalMaxPooling2D())
+    model.add(Dropout(0.5))
+    model.add(BatchNormalization())
+    model.add(Dense(CLASSES, activation='softmax'))
     model.summary()
-    model.compile(optimizer=Adam(lr=0.0001), loss='binary_crossentropy', metrics=['accuracy'])
+    model.compile(optimizer=Adam(lr=0.0001), loss='categorical_crossentropy', metrics=['accuracy'])
     # steps_per_epoch = train_size/ batches
     history = model.fit(
         train_generator,
-        epochs=25,
+        epochs=10,
         steps_per_epoch=steps_per_epoch_,
         validation_data=val_generator,
         validation_steps=validation_steps_,

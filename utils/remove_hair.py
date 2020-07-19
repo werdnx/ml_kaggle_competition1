@@ -2,8 +2,8 @@ import os
 import numpy as np
 import cv2
 
-IN_DIR = '/media/3tstor/ml/IdeaProjects/ml_kaggle_competition1/input/jpeg/test512/'
-OUT_DIR = '/media/3tstor/ml/IdeaProjects/ml_kaggle_competition1/input/jpeg/test512_nohair/'
+IN_DIR = '/media/3tstor/ml/IdeaProjects/ml_kaggle_competition1/input/jpeg/train/'
+OUT_DIR = '/media/3tstor/ml/IdeaProjects/ml_kaggle_competition1/input/jpeg/train_nohair/'
 
 def hair_remove(image):
     # convert image to grayScale
@@ -27,9 +27,11 @@ def hair_remove(image):
 def main():
     train_images_512 = [(IN_DIR + i, i) for i in os.listdir(IN_DIR)]
     for i, image_file in enumerate(train_images_512):
+        print('start process file ' + image_file[1])
         img = cv2.imread(image_file[0], cv2.IMREAD_COLOR)
         no_hair_img = hair_remove(img)
         cv2.imwrite(OUT_DIR + image_file[1], no_hair_img)
+        print('process file ' + image_file[1])
 
 
 

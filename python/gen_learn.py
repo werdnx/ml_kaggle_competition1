@@ -7,6 +7,7 @@ from keras.layers import Dense
 from keras.optimizers import Adam
 import cv2
 import pandas as pd
+import time
 
 iteration = '5'
 
@@ -15,6 +16,7 @@ def run():
     train_df = pd.read_csv('/input/train.csv')
     train_df['target'] = train_df['target'].astype('str')
     train_df['image_name'] = train_df['image_name'].astype(str)
+
     pos_df0 = train_df[train_df['target'] == '1']
     pos_df0['image_name'] = pos_df0['image_name'] + '_0.jpg'
     pos_df1 = train_df[train_df['target'] == '1']
@@ -24,12 +26,23 @@ def run():
     pos_df3 = train_df[train_df['target'] == '1']
     pos_df3['image_name'] = pos_df3['image_name'] + '_3.jpg'
 
+    pos_df4 = train_df[train_df['target'] == '1']
+    pos_df4['image_name'] = pos_df4['image_name'] + '_4.jpg'
+    pos_df5 = train_df[train_df['target'] == '1']
+    pos_df5['image_name'] = pos_df5['image_name'] + '_5.jpg'
+    pos_df6 = train_df[train_df['target'] == '1']
+    pos_df6['image_name'] = pos_df6['image_name'] + '_6.jpg'
+    pos_df7 = train_df[train_df['target'] == '1']
+    pos_df7['image_name'] = pos_df7['image_name'] + '_7.jpg'
+
     train_df['image_name'] = train_df['image_name'] + '.jpg'
 
-    frames = [pos_df1, train_df, pos_df0, pos_df2, pos_df3]
+    frames = [pos_df1, train_df, pos_df0, pos_df2, pos_df3, pos_df4, pos_df5, pos_df6, pos_df7]
 
     train_df = pd.concat(frames)
     train_df.head()
+    print("len of target = 1: " + str(len(train_df[train_df["target"] == '1'])))
+    time.sleep(60)
 
     batch_size_ = batch_size = 30
     #size of images

@@ -7,7 +7,7 @@ import numpy as np
 # from multiprocessing.pool import Pool
 # from functools import partial
 
-IN_DIR = '/media/3tstor/ml/IdeaProjects/ml_kaggle_competition1/input/jpeg/train/'
+IN_DIR = '/home/werdn/input/jpeg/train512_nohair/'
 OUT_DIR = '/home/werdn/input/jpeg/train_pos/'
 
 
@@ -52,7 +52,7 @@ def prepare_img(images, ind):
 
 def main():
     pos_images = read_csv("/media/3tstor/ml/IdeaProjects/ml_kaggle_competition1/input/train.csv")
-    for i in range(4):
+    for i in range(0, 8):
         prepare_img(pos_images, i)
     # four_split = np.array_split(train_images, 4)
     # with Pool(processes=cpu_count()) as p:

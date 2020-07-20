@@ -2,6 +2,7 @@ import numpy as np
 import cv2 as cv
 import os
 import multiprocessing as mp
+from pathlib import Path
 
 
 # delta_x - percentage delta
@@ -10,6 +11,8 @@ def extract_crop(img, delta_x, delta_y):
     imgray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
     ret, thresh = cv.threshold(imgray, 127, 255, 0)
     contours, hierarchy = cv.findContours(thresh, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
+    if len(contours) < 1:
+        return False, []
     max_contour = contours[0]
     max_len = len(contours[0])
     dimensions = img.shape
@@ -110,32 +113,39 @@ def process_imgs(imgs):
 
 def process_one_img(image_file):
     print('start process file ' + image_file[1])
-    img = cv.imread(image_file[0], cv.IMREAD_COLOR)
-    # if dimension > 2k resize 2k
-    if img.shape[0] > 2000 or img.shape[1] > 2000:
-        print('img too big, resize it ' + image_file[1])
-        img = resize(img, 2000)
-    print('remove hair ' + image_file[1])
-    img = hair_remove(img)
-    print('crop ' + image_file[1])
-    croped_img = combined_crop(img)
-    # ???resize???
-    if croped_img.shape[0] > 512 or croped_img.shape[1] > 512:
-        croped_img = resize(croped_img, 512)
-    cv.imwrite(OUT_DIR + image_file[1], croped_img)
-    print('process file ' + image_file[1])
+    my_file = Path(OUT_DIR + image_file[1])
+    if my_file.is_file():
+        # file exists
+        print('file exists ' + image_file[1])
+        return
+    else:
+        img = cv.imread(image_file[0], cv.IMREAD_COLOR)
+        # if dimension > 2k resize 2k
+        if img.shape[0] > 1024 or img.shape[1] > 1024:
+            print('img too big, resize it ' + image_file[1])
+            img = resize(img, 1024)
+        print('remove hair ' + image_file[1])
+        img = hair_remove(img)
+        print('crop ' + image_file[1])
+        croped_img = combined_crop(img)
+        # ???resize???
+        if croped_img.shape[0] > 512 or croped_img.shape[1] > 512:
+            croped_img = resize(croped_img, 512)
+        cv.imwrite(OUT_DIR + image_file[1], croped_img)
+        print('process file ' + image_file[1])
 
 
-IN_DIR = '/media/3tstor/ml/IdeaProjects/ml_kaggle_competition1/input/jpeg/train'
+IN_DIR = '/media/3tstor/ml/IdeaProjects/ml_kaggle_competition1/input/jpeg/train/'
 OUT_DIR = '/home/werdn/input/jpeg/train512_nohair_croped/'
 
 
 def main():
     imgs = [(IN_DIR + i, i) for i in os.listdir(IN_DIR)]
-    pool = mp.Pool()
-    pool = mp.Pool(processes=4)
-    outputs = pool.map(process_one_img, imgs)
-    pool.close()
+    for img in imgs:
+        process_one_img(img)
+    #pool = mp.Pool(processes=4)
+    #outputs = pool.map(process_one_img, imgs)
+    #pool.close()
     # process_imgs(imgs)
 
 

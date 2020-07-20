@@ -1,3 +1,12 @@
+#######SCENARIO###########
+extract_region_combined.py
+create_pos_images2.py
+copy pos images to input folder
+learn
+predict
+#######SCENARIO###########
+
+
 orig image -> no hair image -> croped image
 1. no_hair
 2. counter extract or crop by aprox rectangle

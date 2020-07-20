@@ -42,6 +42,7 @@ def run():
     batch_size_ = batch_size = 2
     # size of images
     target_size_ = 512
+    epochs_ = 7
     steps_per_epoch_ = len(train_df) / batch_size
     validation_steps_ = steps_per_epoch_ / 5
     train_datagen = ImageDataGenerator(
@@ -96,7 +97,7 @@ def run():
     # steps_per_epoch = train_size/ batches
     history = model.fit(
         train_generator,
-        epochs=10,
+        epochs=epochs_,
         steps_per_epoch=steps_per_epoch_,
         validation_data=val_generator,
         validation_steps=validation_steps_,

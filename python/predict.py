@@ -9,10 +9,10 @@ from keras.optimizers import SGD, Adam
 from efficientnet.keras import EfficientNetB3
 from gen_learn import iteration
 
-TARGET_ROWS = 128
-TARGET_COLS = 128
+TARGET_ROWS = 512
+TARGET_COLS = 512
 CHANNELS = 3
-DIR = '/input/jpeg/test512_nohair/'
+DIR = '/input/jpeg/test512_nohair_croped/'
 
 
 def read_data(path):

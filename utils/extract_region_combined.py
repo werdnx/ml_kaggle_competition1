@@ -135,8 +135,8 @@ def process_one_img(image_file):
         print('process file ' + image_file[1])
 
 
-IN_DIR = '/media/3tstor/ml/IdeaProjects/ml_kaggle_competition1/input/jpeg/train/'
-OUT_DIR = '/home/werdn/input/jpeg/train512_nohair_croped/'
+IN_DIR = '/media/3tstor/ml/IdeaProjects/ml_kaggle_competition1/input/jpeg/test/'
+OUT_DIR = '/home/werdn/input/jpeg/test512_nohair_croped/'
 
 
 def main():

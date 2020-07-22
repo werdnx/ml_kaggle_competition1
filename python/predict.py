@@ -8,11 +8,12 @@ import cv2
 from keras.optimizers import SGD, Adam
 from efficientnet.keras import EfficientNetB3
 from gen_learn import iteration
+import time
 
 TARGET_ROWS = 512
 TARGET_COLS = 512
 CHANNELS = 3
-DIR = '/input/jpeg/test512_nohair_croped/'
+DIR = '/input/jpeg/test512_nohair/'
 
 
 def read_data(path):
@@ -34,7 +35,8 @@ def read_data(path):
 def prepare_data(img_label):
     X = np.zeros((1, TARGET_ROWS, TARGET_ROWS, CHANNELS), dtype=np.uint8)
     img = read_image(DIR + img_label + '.jpg')
-    X[0, :] = cv2.resize(img, (TARGET_ROWS, TARGET_COLS), interpolation=cv2.INTER_CUBIC)
+    X[0, :] = img
+    #X[0, :] = cv2.resize(img, (TARGET_ROWS, TARGET_COLS), interpolation=cv2.INTER_CUBIC)
     return X
 
 
@@ -46,21 +48,40 @@ def main():
     start = time.time()
     fields = ['image_name', 'target']
     rows = []
+    stat_rows = []
     print("--------------------------------Run main!------------------------------------")
     images = read_data("/input/test.csv")
+    print('loaded images')
+    print(images)
+    #time.sleep(10)
     #adam = Adam(lr=0.0001)
     model = load_model('/output/model1_EfficientNetB3_gen'+iteration)
-    #model.compile(optimizer=adam, loss='categorical_crossentropy', metrics=['accuracy'])
+    model.summary()
+    model.compile(optimizer=Adam(lr=0.0001), loss='categorical_crossentropy', metrics=['accuracy'])
     i = 0
     for image in images:
         test_set = prepare_data(image)
         x_test = test_set / 255
         result = model.predict(x_test)
-        rows.append((image, np.argmax(result)))
+        stat_rows.append(result)
+        if result[0][1] > 0.3:
+            rows.append((image, '1'))
+            print('1')
+        else:
+            rows.append((image, '0'))
+            print('0')
+        #rows.append((image, np.argmax(result)))
         i = i + 1
-        print (np.argmax(result))
+        print('result1 ' + str(i))
+        print (result)
 
     #exit(0)
+    filename_stat = '/output/result_stat' + iteration + '.csv'
+    with open(filename_stat, 'w') as csvfile:
+        # creating a csv writer object
+        csvwriter = csv.writer(csvfile)
+        csvwriter.writerows(stat_rows)
+
     filename = '/output/result' + iteration+'.csv'
     # writing to csv file
     with open(filename, 'w') as csvfile:

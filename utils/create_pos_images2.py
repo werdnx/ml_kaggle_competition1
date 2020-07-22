@@ -7,8 +7,8 @@ import numpy as np
 # from multiprocessing.pool import Pool
 # from functools import partial
 
-IN_DIR = '/home/werdn/input/jpeg/train512_nohair/'
-OUT_DIR = '/home/werdn/input/jpeg/train_pos/'
+IN_DIR = '/home/werdn/input/jpeg/train512_nohair_croped/'
+OUT_DIR = '/home/werdn/input/jpeg/train512_nohair_croped/'
 
 
 def read_csv(path):

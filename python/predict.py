@@ -7,13 +7,14 @@ import numpy as np
 import cv2
 from keras.optimizers import SGD, Adam
 from efficientnet.keras import EfficientNetB3
-from gen_learn import iteration
 import time
 
-TARGET_ROWS = 512
-TARGET_COLS = 512
+from python.model_params import target_size_, model_name
+
+TARGET_ROWS = target_size_
+TARGET_COLS = target_size_
 CHANNELS = 3
-DIR = '/input/jpeg/test512_nohair/'
+DIR = '/input/jpeg/test512_nohair_croped/'
 
 
 def read_data(path):
@@ -34,9 +35,10 @@ def read_data(path):
 
 def prepare_data(img_label):
     X = np.zeros((1, TARGET_ROWS, TARGET_ROWS, CHANNELS), dtype=np.uint8)
+    #print ('read img ' + DIR + img_label + '.jpg')
     img = read_image(DIR + img_label + '.jpg')
-    X[0, :] = img
-    #X[0, :] = cv2.resize(img, (TARGET_ROWS, TARGET_COLS), interpolation=cv2.INTER_CUBIC)
+    # X[0, :] = img
+    X[0, :] = cv2.resize(img, (TARGET_ROWS, TARGET_COLS), interpolation=cv2.INTER_CUBIC)
     return X
 
 
@@ -53,9 +55,9 @@ def main():
     images = read_data("/input/test.csv")
     print('loaded images')
     print(images)
-    #time.sleep(10)
-    #adam = Adam(lr=0.0001)
-    model = load_model('/output/model1_EfficientNetB3_gen'+iteration)
+    # time.sleep(10)
+    # adam = Adam(lr=0.0001)
+    model = load_model('/output/' + model_name)
     model.summary()
     model.compile(optimizer=Adam(lr=0.0001), loss='categorical_crossentropy', metrics=['accuracy'])
     i = 0
@@ -63,34 +65,34 @@ def main():
         test_set = prepare_data(image)
         x_test = test_set / 255
         result = model.predict(x_test)
-        stat_rows.append(result)
-        if result[0][1] > 0.3:
-            rows.append((image, '1'))
-            print('1')
-        else:
-            rows.append((image, '0'))
-            print('0')
-        #rows.append((image, np.argmax(result)))
-        i = i + 1
-        print('result1 ' + str(i))
+        stat_rows.append((image, result[0][0], result[0][1]))
+        # if result[0][1] > 0.4:
+        #     rows.append((image, '1'))
+        #     print('1')
+        # else:
+        #     rows.append((image, '0'))
+        #     print('0')
+        # #rows.append((image, np.argmax(result)))
+        # i = i + 1
+        # print('result1 ' + str(i))
         print (result)
 
-    #exit(0)
-    filename_stat = '/output/result_stat' + iteration + '.csv'
+    # exit(0)
+    filename_stat = '/output/result_stat_' + model_name + '.csv'
     with open(filename_stat, 'w') as csvfile:
         # creating a csv writer object
         csvwriter = csv.writer(csvfile)
         csvwriter.writerows(stat_rows)
 
-    filename = '/output/result' + iteration+'.csv'
-    # writing to csv file
-    with open(filename, 'w') as csvfile:
-        # creating a csv writer object
-        csvwriter = csv.writer(csvfile)
-        # writing the fields
-        csvwriter.writerow(fields)
-        # writing the data rows
-        csvwriter.writerows(rows)
+    # filename = '/output/result' + iteration+'.csv'
+    # # writing to csv file
+    # with open(filename, 'w') as csvfile:
+    #     # creating a csv writer object
+    #     csvwriter = csv.writer(csvfile)
+    #     # writing the fields
+    #     csvwriter.writerow(fields)
+    #     # writing the data rows
+    #     csvwriter.writerows(rows)
     print("--------------------------------End main!------------------------------------")
     end = time.time()
     total = end - start

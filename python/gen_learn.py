@@ -12,7 +12,7 @@ import cv2
 import pandas as pd
 import time
 
-from python.model_params import batch_size, target_size_, batch_size_, epochs_, model_name
+from model_params import batch_size, target_size_, batch_size_, epochs_, model_name
 
 CLASSES = 2
 

@@ -9,7 +9,7 @@ from keras.optimizers import SGD, Adam
 from efficientnet.keras import EfficientNetB3
 import time
 
-from python.model_params import target_size_, model_name
+from model_params import target_size_, model_name
 
 TARGET_ROWS = target_size_
 TARGET_COLS = target_size_

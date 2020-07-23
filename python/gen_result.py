@@ -9,7 +9,7 @@ def main():
     with open(filename_stat) as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',')
         for row in csv_reader:
-            if float(row[2]) > 0.3:
+            if float(row[2]) > 0.9:
                 rows.append((row[0], '1'))
             else:
                 rows.append((row[0], '0'))

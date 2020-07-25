@@ -27,7 +27,7 @@ def run():
 
     add_df = train_df.copy()
     add_df = add_df.iloc[0:0]
-    for i in range(0, 30):
+    for i in range(0, 60):
         pos_df_new = train_df[train_df['target'] == '1'].copy()
         pos_df_new['image_name'] = pos_df_new['image_name'] + '_' + str(i)
         frames = [add_df, pos_df_new]
@@ -78,8 +78,8 @@ def run():
         class_mode="categorical"
     )
     efficient_net = EfficientNetB3(
-        # weights='imagenet',
-        weights=None,
+        weights='imagenet',
+        #weights=None,
         input_shape=(target_size_, target_size_, 3),
         include_top=False
         # pooling='max'

@@ -1,16 +1,25 @@
+load dataset http://tensorflow.org/datasets/api_docs/python/tfds/ImageFolder
+use b3 300 https://keras.io/examples/vision/image_classification_efficientnet_fine_tuning/
+merge with csv model
+
+
+50/50 samples
+Black and white
+
+
 #######SCENARIO###########
 extract_region_combined.py
 create_pos_images2.py
 copy pos images to input folder
 learn
 predict
-#######SCENARIO###########
+#######SCENARIO########### DONE
 
 
-orig image -> no hair image -> croped image
+orig image -> no hair image -> croped image DONE
 1. no_hair
 2. counter extract or crop by aprox rectangle
-!try without imagenet weights
+!try without imagenet weights DONE BAD
 
 512
 remove hair
@@ -21,14 +30,14 @@ create simple model +
 ImageDataGenerator
 efficiencynet https://www.kaggle.com/arjunrao2000/beginners-guide-efficientnet-with-keras
 create more data with marked 1, try different sizes
-extract square with nevus
+extract square with nevus DONE
 
-try efficiencynet, resnet 152
+try efficiencynet, resnet 152 DONE
 
 improve by focus image
 exclude duplicates
 improve by learn on different image sizes
-improve by removing hair
+improve by removing hair DONE
 make gray?
 add other features, aggregated result from several models
 

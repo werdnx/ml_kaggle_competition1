@@ -52,7 +52,7 @@ def prepare_img(images, ind):
 
 def main():
     pos_images = read_csv("/media/3tstor/ml/IdeaProjects/ml_kaggle_competition1/input/train.csv")
-    for i in range(0, 30):
+    for i in range(0, 60):
         prepare_img(pos_images, i)
     # four_split = np.array_split(train_images, 4)
     # with Pool(processes=cpu_count()) as p:

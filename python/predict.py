@@ -59,7 +59,7 @@ def main():
     # adam = Adam(lr=0.0001)
     model = load_model('/output/' + model_name)
     model.summary()
-    model.compile(optimizer=Adam(lr=0.0001), loss='categorical_crossentropy', metrics=['accuracy'])
+    model.compile(optimizer=Adam(lr=0.0001), loss='binary_crossentropy', metrics=['accuracy'])
     i = 0
     for image in images:
         test_set = prepare_data(image)

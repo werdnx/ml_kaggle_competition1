@@ -87,7 +87,7 @@ def run():
     model = Sequential()
     model.add(efficient_net)
     model.add(GlobalMaxPooling2D())
-    model.add(Dropout(0.5))
+    model.add(Dropout(0.2))
     model.add(BatchNormalization())
     model.add(Dense(CLASSES, activation='softmax'))
     # model = load_model('/output/model1_EfficientNetB3_gen' + '7')

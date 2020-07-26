@@ -2,7 +2,7 @@ import csv
 
 from model_params import model_name
 
-threashold = 0.4
+threashold = 0.01
 
 
 def main():
@@ -16,7 +16,7 @@ def main():
             else:
                 rows.append((row[0], '0'))
 
-    filename = '/media/3tstor/ml/IdeaProjects/ml_kaggle_competition1/output/result_20' + model_name + '_' + str(
+    filename = '/media/3tstor/ml/IdeaProjects/ml_kaggle_competition1/output/result' + model_name + '_' + str(
         threashold) + '.csv'
     # writing to csv file
     fields = ['image_name', 'target']

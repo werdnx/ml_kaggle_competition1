@@ -1,3 +1,12 @@
+
+##FLOW
+1. create pos images in /home/werdn/input/jpeg/tsds/train/malignant
+/home/werdn/input/jpeg/tsds/test/malignant  create_pos_images3.py
+2. split by train and test in /home/werdn/input/jpeg/tsds split_images.py
+3. run learn
+
+
+
 load dataset http://tensorflow.org/datasets/api_docs/python/tfds/ImageFolder
 use b3 300 https://keras.io/examples/vision/image_classification_efficientnet_fine_tuning/
 merge with csv model

@@ -1,5 +1,5 @@
 import time
-from gen_learn import run
+from gen_learn2 import run
 
 
 def main():
@@ -8,7 +8,7 @@ def main():
     run()
     print("--------------------------------End main!------------------------------------")
     end = time.time()
-    total = end -start
+    total = end - start
     print("total time mls:")
     print(total)
 

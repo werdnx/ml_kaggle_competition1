@@ -7,8 +7,9 @@ import numpy as np
 # from multiprocessing.pool import Pool
 # from functools import partial
 
-IN_DIR = '/home/werdn/input/jpeg/train_nohair/'
+IN_DIR = '/home/werdn/input/jpeg/train512_nohair/'
 OUT_DIR = '/home/werdn/input/jpeg/tsds/train/malignant/'
+OUT_DIR_TEST = '/home/werdn/input/jpeg/tsds/test/malignant/'
 
 
 def read_csv(path):
@@ -43,17 +44,19 @@ def read_image_and_rotate(file_path, angle):
     return rotate_image(img, angle)
 
 
-def prepare_img(images, ind):
+def prepare_img(images, ind, path):
     for i, image_file in enumerate(images):
         img = cv2.imread(IN_DIR + image_file + '.jpg', cv2.IMREAD_COLOR)
-        print ("write file " + OUT_DIR + image_file + '_' + str(ind) + '.jpg')
-        cv2.imwrite(OUT_DIR + image_file + '_' + str(ind) + '.jpg', img)
+        print ("write file " + path + image_file + '_' + str(ind) + '.jpg')
+        cv2.imwrite(path + image_file + '_' + str(ind) + '.jpg', img)
 
 
 def main():
     pos_images = read_csv("/media/3tstor/ml/IdeaProjects/ml_kaggle_competition1/input/train.csv")
-    for i in range(0, 60):
-        prepare_img(pos_images, i)
+    for i in range(0, 48):
+        prepare_img(pos_images, i, OUT_DIR)
+    for i in range(49, 61):
+        prepare_img(pos_images, i, OUT_DIR_TEST)
     # four_split = np.array_split(train_images, 4)
     # with Pool(processes=cpu_count()) as p:
     # for array in train_images:

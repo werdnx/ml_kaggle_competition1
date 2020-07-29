@@ -1,45 +1,38 @@
 import os
 import cv2
+import csv
 import numpy as np
-#from os import cpu_count
-#from multiprocessing.pool import Pool
-#from functools import partial
-from tqdm import tqdm
 
-IN_DIR = '/media/3tstor/ml/IdeaProjects/ml_kaggle_competition1/input/jpeg/train/'
-OUT_DIR = '/media/3tstor/ml/IdeaProjects/ml_kaggle_competition1/input/jpeg/train512/'
+# from os import cpu_count
+# from multiprocessing.pool import Pool
+# from functools import partial
+
+IN_DIR = '/input/jpeg/train512_nohair/'
+OUT_DIR = '/input/jpeg/tsds/train/malignant/'
 ROWS = 512
 COLS = 512
 
 
-def read_image(file_path):
-    img = cv2.imread(file_path, cv2.IMREAD_COLOR)
-    return cv2.resize(img, (ROWS, COLS), interpolation=cv2.INTER_CUBIC)
-
-
-def prepare_img(images):
-    l = len(images)
-    with tqdm(total=100) as pbar:
-        for i, image_file in enumerate(images):
-            img = read_image(image_file[0])
-            cv2.imwrite(OUT_DIR+image_file[1], img)
-            pbar.update((i * 100) / float(l))
+def read_csv(path):
+    positive = []
+    with open(path) as csv_file:
+        csv_reader = csv.reader(csv_file, delimiter=',')
+        line_count = 0
+        for row in csv_reader:
+            if line_count == 0:
+                print('Column names are ', ", ".join(row))
+                line_count += 1
+            else:
+                if row[7] == "1":
+                    positive.append(row[0])
+                line_count += 1
+        print('Processed lines.', line_count)
+        print('positive lines.', positive)
+        return positive
 
 
 def main():
-    train_images_all = [(IN_DIR + i, i) for i in os.listdir(IN_DIR)]
-    train_images_512 = [(IN_DIR + i, i) for i in os.listdir(OUT_DIR)]
-    to_proccess = list(set(train_images_all) - set(train_images_512))
-    prepare_img(to_proccess)
-    #four_split = np.array_split(train_images, 4)
-    # with Pool(processes=cpu_count()) as p:
-    #for array in train_images:
-        #prepare_img(array)
-        #p.imap_unordered(prepare_img, array)
-
-
-
-
+    to_augument_images = read_csv("/media/3tstor/ml/IdeaProjects/ml_kaggle_competition1/input/train.csv")
 
 
 

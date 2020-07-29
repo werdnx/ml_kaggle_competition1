@@ -10,7 +10,7 @@ from efficientnet.keras import EfficientNetB3
 import time
 import tensorflow as tf
 
-from model_params import target_size_, model_name
+from python.model_params import target_size_, model_name
 
 TARGET_ROWS = target_size_
 TARGET_COLS = target_size_

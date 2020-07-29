@@ -2,7 +2,7 @@ import tensorflow_datasets as tfds
 import tensorflow as tf
 from tensorflow.keras.models import Sequential
 from tensorflow.keras import layers
-from tensorflow.keras.applications import EfficientNetB5
+from tensorflow.keras.applications import EfficientNetB3
 from tensorflow.keras.layers.experimental import preprocessing
 import time
 
@@ -42,10 +42,10 @@ def run():
     img_augmentation = Sequential(
         [
             preprocessing.RandomRotation(factor=0.15),
-            preprocessing.RandomTranslation(height_factor=0.1, width_factor=0.1),
+            #preprocessing.RandomTranslation(height_factor=0.1, width_factor=0.1),
             preprocessing.RandomFlip(),
-            preprocessing.RandomZoom(height_factor=(-0.3, -0.2), width_factor=(-0.3, -0.2)),
-            preprocessing.RandomContrast(factor=0.1)
+            #preprocessing.RandomZoom(height_factor=(-0.3, -0.2), width_factor=(-0.3, -0.2)),
+            #preprocessing.RandomContrast(factor=0.1)
             #, preprocessing.Rescaling(scale=1. / 255.)
         ],
         name="img_augmentation"
@@ -60,7 +60,7 @@ def run():
 
     inputs = layers.Input(shape=(target_size_, target_size_, 3))
     x = img_augmentation(inputs)
-    model = EfficientNetB5(include_top=False, input_tensor=x, weights="imagenet")
+    model = EfficientNetB3(include_top=False, input_tensor=x, weights="imagenet")
 
     # Freeze the pretrained weights
     model.trainable = False

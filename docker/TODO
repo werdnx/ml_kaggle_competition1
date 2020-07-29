@@ -1,3 +1,9 @@
+1. Add new examples, 512 https://www.kaggle.com/c/siim-isic-melanoma-classification/discussion/169139 https://www.kaggle.com/kmader/skin-cancer-mnist-ham10000 https://www.kaggle.com/andrewmvd/isic-2019
+2. Add custom layer https://github.com/tensorflow/tensorflow/blob/v2.3.0/tensorflow/python/keras/layers/preprocessing/image_preprocessing.py#L349-L424  with augmentation
+https://www.kaggle.com/nxrprime/siim-d3-eda-augmentations-and-resnext
+https://www.kaggle.com/c/siim-isic-melanoma-classification/discussion/169721 ???
+
+
 
 ##FLOW
 1. create pos images in /home/werdn/input/jpeg/tsds/train/malignant

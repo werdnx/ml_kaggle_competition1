@@ -15,7 +15,7 @@ from model_params import target_size_, model_name
 TARGET_ROWS = target_size_
 TARGET_COLS = target_size_
 CHANNELS = 3
-DIR = '/input/jpeg/test512_nohair_normalized/'
+DIR = '/input/jpeg/test512_nohair/'
 
 
 def read_data(path):

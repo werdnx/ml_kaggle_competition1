@@ -31,28 +31,28 @@ def main():
     train_df = pd.read_csv('/media/3tstor/ml/IdeaProjects/ml_kaggle_competition1/input/train.csv')
     train_df = train_df.sample(frac=1).reset_index(drop=True)
     train, test = train_test_split(train_df, test_size=0.3)
-    test_images = [(IN_DIR_TEST + i, i) for i in os.listdir(IN_DIR_TEST)]
-    for i, image_file in enumerate(test_images):
-        print ("write file " + OUT_DIR_TEST + image_file[1])
-        normalize(image_file[0], OUT_DIR_TEST + image_file[1])
+    # test_images = [(IN_DIR_TEST + i, i) for i in os.listdir(IN_DIR_TEST)]
+    # for i, image_file in enumerate(test_images):
+    #     print ("write file " + OUT_DIR_TEST + image_file[1])
+    #     normalize(image_file[0], OUT_DIR_TEST + image_file[1])
 
     for index, row in train.iterrows():
         if str(row['target']) == "1":
-            normalize(IN_DIR + row['image_name'] + '.jpg', OUT_DIR + 'train/malignant/' + row['image_name'] + '.jpg')
-            # copyfile(IN_DIR + row['image_name'] + '.jpg', OUT_DIR + 'train/malignant/' + row['image_name'] + '.jpg')
+            # normalize(IN_DIR + row['image_name'] + '.jpg', OUT_DIR + 'train/malignant/' + row['image_name'] + '.jpg')
+            copyfile(IN_DIR + row['image_name'] + '.jpg', OUT_DIR + 'train/malignant/' + row['image_name'] + '.jpg')
             print ("write file " + OUT_DIR + 'train/malignant/' + row['image_name'] + '.jpg')
         else:
-            normalize(IN_DIR + row['image_name'] + '.jpg', OUT_DIR + 'train/benign/' + row['image_name'] + '.jpg')
-            # copyfile(IN_DIR + row['image_name'] + '.jpg', OUT_DIR + 'train/benign/' + row['image_name'] + '.jpg')
+            # normalize(IN_DIR + row['image_name'] + '.jpg', OUT_DIR + 'train/benign/' + row['image_name'] + '.jpg')
+            copyfile(IN_DIR + row['image_name'] + '.jpg', OUT_DIR + 'train/benign/' + row['image_name'] + '.jpg')
             print ("write file " + OUT_DIR + 'train/benign/' + row['image_name'] + '.jpg')
     for index, row in test.iterrows():
         if str(row['target']) == "1":
-            normalize(IN_DIR + row['image_name'] + '.jpg', OUT_DIR + 'test/malignant/' + row['image_name'] + '.jpg')
-            # copyfile(IN_DIR + row['image_name'] + '.jpg', OUT_DIR + 'test/malignant/' + row['image_name'] + '.jpg')
+            # normalize(IN_DIR + row['image_name'] + '.jpg', OUT_DIR + 'test/malignant/' + row['image_name'] + '.jpg')
+            copyfile(IN_DIR + row['image_name'] + '.jpg', OUT_DIR + 'test/malignant/' + row['image_name'] + '.jpg')
             print ("write file " + OUT_DIR + 'test/malignant/' + row['image_name'] + '.jpg')
         else:
-            normalize(IN_DIR + row['image_name'] + '.jpg', OUT_DIR + 'test/benign/' + row['image_name'] + '.jpg')
-            # copyfile(IN_DIR + row['image_name'] + '.jpg', OUT_DIR + 'test/benign/' + row['image_name'] + '.jpg')
+            # normalize(IN_DIR + row['image_name'] + '.jpg', OUT_DIR + 'test/benign/' + row['image_name'] + '.jpg')
+            copyfile(IN_DIR + row['image_name'] + '.jpg', OUT_DIR + 'test/benign/' + row['image_name'] + '.jpg')
             print ("write file " + OUT_DIR + 'test/benign/' + row['image_name'] + '.jpg')
 
 

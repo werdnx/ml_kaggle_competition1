@@ -6,6 +6,7 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 from shutil import copyfile
 import cv2
+import random
 from augmentation import size
 
 # from os import cpu_count
@@ -15,6 +16,7 @@ IN_DIR = '/home/werdn/input/jpeg/train512_nohair/'
 IN_DIR_TEST = '/home/werdn/input/jpeg/test512_nohair/'
 OUT_DIR_TEST = '/home/werdn/input/jpeg/test512_nohair_normalized/'
 OUT_DIR = '/home/werdn/input/jpeg/tsds/'
+IN_DIR_MAL = '/media/3tstor/ml/IdeaProjects/ml_kaggle_competition1/output/malign_candidates/'
 
 
 # test=validation
@@ -30,11 +32,22 @@ def normalize(path, out_path):
 def main():
     train_df = pd.read_csv('/media/3tstor/ml/IdeaProjects/ml_kaggle_competition1/input/train.csv')
     train_df = train_df.sample(frac=1).reset_index(drop=True)
-    train, test = train_test_split(train_df, test_size=0.3)
-    # test_images = [(IN_DIR_TEST + i, i) for i in os.listdir(IN_DIR_TEST)]
-    # for i, image_file in enumerate(test_images):
-    #     print ("write file " + OUT_DIR_TEST + image_file[1])
-    #     normalize(image_file[0], OUT_DIR_TEST + image_file[1])
+    train, test = train_test_split(train_df, test_size=0.2)
+
+    mal_images = [(IN_DIR_MAL + i, i) for i in os.listdir(IN_DIR_MAL)]
+    random.shuffle(mal_images)
+    length = len(mal_images)
+    test_index = length // 5
+    test_mal = mal_images[:test_index]
+    train_mal = mal_images[test_index:]
+    print('len of add malign test ' + str(test_mal))
+    print('len of add malign train ' + str(train_mal))
+    for index, row in enumerate(train_mal):
+        copyfile(IN_DIR_MAL + row[1], OUT_DIR + 'train/malignant/' + row[1])
+        print ("write file " + OUT_DIR + 'train/malignant/' + row[1] )
+    for index, row in enumerate(test_mal):
+        copyfile(IN_DIR_MAL + row[1], OUT_DIR + 'test/malignant/' + row[1])
+        print ("write file " + OUT_DIR + 'test/malignant/' + row[1] )
 
     for index, row in train.iterrows():
         if str(row['target']) == "1":

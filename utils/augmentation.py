@@ -6,7 +6,7 @@ import os
 
 size = 512
 
-IN_DIR = '/media/3tstor/ml/IdeaProjects/ml_kaggle_competition1/output/malign_candidates/'
+IN_DIR = '/home/werdn/input/jpeg/tsds/train/malignant/'
 OUT_DIR = '/home/werdn/input/jpeg/tsds/train/malignant/'
 
 
@@ -231,9 +231,10 @@ def canny_edges(no_hair_img, out_path):
     cv2.imwrite(out_path, image)
 
 
-func_list = [gaussianBlur, neuron, circle_crop, circle_crop_auto,
-             imageSegmentation, imageSegmentation2, grayscaleImageSegmentation, erosion, dilation,
-             erosion_dilation
+func_list = [gaussianBlur, neuron, circle_crop
+    #, circle_crop_auto,
+             #imageSegmentation, imageSegmentation2, grayscaleImageSegmentation, erosion, dilation,
+             #erosion_dilation
              # , canny_edges
              # backgroundSubtractor,
              ]
@@ -290,7 +291,7 @@ def main():
     test_images = [(IN_DIR + i, i) for i in os.listdir(IN_DIR)]
     for i, image_file in enumerate(test_images):
         aug_iteration(image_file)
-        albus_iteration(image_file)
+        #albus_iteration(image_file)
 
 
 if __name__ == "__main__":

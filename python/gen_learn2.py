@@ -42,9 +42,9 @@ def run():
     img_augmentation = Sequential(
         [
             preprocessing.RandomRotation(factor=0.15),
-            #preprocessing.RandomTranslation(height_factor=0.1, width_factor=0.1),
+            preprocessing.RandomTranslation(height_factor=0.1, width_factor=0.1),
             preprocessing.RandomFlip(),
-            #preprocessing.RandomZoom(height_factor=(-0.3, -0.2), width_factor=(-0.3, -0.2)),
+            preprocessing.RandomZoom(height_factor=(-0.3, -0.2), width_factor=(-0.3, -0.2)),
             #preprocessing.RandomContrast(factor=0.1)
             #, preprocessing.Rescaling(scale=1. / 255.)
         ],

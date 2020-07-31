@@ -1,3 +1,17 @@
+1. reduce aug filters
+2-3 aug filters + add ,align
+
+delete data from tsds +
+split_images.py
+augmentation.py
+duplicate malign
+-->
+2. add normalization
+-->
+3. B7
+
+
+
 Add normalization
 
 

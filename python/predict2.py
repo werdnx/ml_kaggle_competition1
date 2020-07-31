@@ -9,6 +9,7 @@ from keras.optimizers import SGD, Adam
 from tensorflow.keras.applications import EfficientNetB6
 import time
 import tensorflow as tf
+from utils import normalize_image_tf
 
 from model_params import target_size_, model_name
 
@@ -34,11 +35,19 @@ def read_data(path):
         return result
 
 
+def normalize(image):
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2LAB)
+    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(target_size_, target_size_))
+    image[:, :, 0] = clahe.apply(image[:, :, 0])
+    return image
+
+
 def prepare_data(img_label):
     print('load img ' + DIR + img_label + '.jpg')
     img = keras.preprocessing.image.load_img(
         DIR + img_label + '.jpg', target_size=(target_size_, target_size_)
     )
+    # img = normalize_image_tf(img)
     img_array = keras.preprocessing.image.img_to_array(img)
     img_array = tf.expand_dims(img_array, 0)  # Create batch axis
 

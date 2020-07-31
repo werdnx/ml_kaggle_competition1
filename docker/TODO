@@ -6,9 +6,10 @@ split_images.py
 augmentation.py
 duplicate malign
 -->
-2. add normalization
+2. add normalization   https://dev.widemeadows.de/2016/12/12/getting-an-image-into-and-out-of-tensorflow/
 -->
 3. B7
+
 
 
 

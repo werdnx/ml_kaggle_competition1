@@ -5,6 +5,8 @@ from tensorflow.keras import layers
 from tensorflow.keras.applications import EfficientNetB3
 from tensorflow.keras.layers.experimental import preprocessing
 import time
+import cv2
+from utils import normalize_image_tf
 
 from model_params import batch_size, target_size_, batch_size_, epochs_, model_name
 
@@ -13,6 +15,7 @@ NUM_CLASSES = 2
 
 def input_preprocess(image, label):
     label = tf.one_hot(label, NUM_CLASSES)
+    # image = normalize_image_tf(image)
     return image, label
 
 
@@ -45,8 +48,8 @@ def run():
             preprocessing.RandomTranslation(height_factor=0.1, width_factor=0.1),
             preprocessing.RandomFlip(),
             preprocessing.RandomZoom(height_factor=(-0.3, -0.2), width_factor=(-0.3, -0.2)),
-            #preprocessing.RandomContrast(factor=0.1)
-            #, preprocessing.Rescaling(scale=1. / 255.)
+            # preprocessing.RandomContrast(factor=0.1)
+            # , preprocessing.Rescaling(scale=1. / 255.)
         ],
         name="img_augmentation"
     )

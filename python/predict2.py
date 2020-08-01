@@ -47,10 +47,9 @@ def prepare_data(img_label):
     img = keras.preprocessing.image.load_img(
         DIR + img_label + '.jpg', target_size=(target_size_, target_size_)
     )
-    # img = normalize_image_tf(img)
     img_array = keras.preprocessing.image.img_to_array(img)
     img_array = tf.expand_dims(img_array, 0)  # Create batch axis
-
+    img_array = tf.image.per_image_standardization(img_array)
     return img_array
 
 

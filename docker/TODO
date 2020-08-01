@@ -1,3 +1,7 @@
+Preprocessign
+tfa.image.mean_filter2d(img, filter_shape=11) https://www.tensorflow.org/addons/tutorials/image_ops
+
+
 1. reduce aug filters
 2-3 aug filters + add ,align
 

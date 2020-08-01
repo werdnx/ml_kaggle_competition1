@@ -2,8 +2,8 @@ import csv
 import os
 from pathlib import Path
 
-thresholds = [0.001, 0.005, 0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7]
-filename_stat = 'result_stat_model4_EfficientNetB5_gen_456_6_15_14.csv'
+thresholds = [0.001, 0.005, 0.01, 0.05, 0.1, 0.15, 0.2, 0.25,  0.3, 0.35, 0.4, 0.45, 0.5, 0.6, 0.7]
+filename_stat = 'result_stat_model5_EfficientNetB5_gen_456_6_15_15.csv'
 DIR = '/Users/dmitrenkoandrey/PycharmProjects/ml_kaggle_competition1/result'
 
 

@@ -2,7 +2,7 @@ import tensorflow_datasets as tfds
 import tensorflow as tf
 from tensorflow.keras.models import Sequential
 from tensorflow.keras import layers
-from tensorflow.keras.applications import EfficientNetB3
+from tensorflow.keras.applications import EfficientNetB5
 from tensorflow.keras.layers.experimental import preprocessing
 import time
 import cv2
@@ -15,7 +15,7 @@ NUM_CLASSES = 2
 
 def input_preprocess(image, label):
     label = tf.one_hot(label, NUM_CLASSES)
-    # image = normalize_image_tf(image)
+    image = tf.image.per_image_standardization(image)
     return image, label
 
 
@@ -63,7 +63,7 @@ def run():
 
     inputs = layers.Input(shape=(target_size_, target_size_, 3))
     x = img_augmentation(inputs)
-    model = EfficientNetB3(include_top=False, input_tensor=x, weights="imagenet")
+    model = EfficientNetB5(include_top=False, input_tensor=x, weights="imagenet")
 
     # Freeze the pretrained weights
     model.trainable = False

@@ -19,6 +19,10 @@ OUT_DIR = '/home/werdn/input/jpeg/tsds/'
 IN_DIR_MAL = '/media/3tstor/ml/IdeaProjects/ml_kaggle_competition1/output/malign_candidates/'
 
 
+
+
+
+
 # test=validation
 
 def normalize(path, out_path):

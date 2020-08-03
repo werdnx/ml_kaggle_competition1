@@ -35,21 +35,16 @@ def read_data(path):
         return result
 
 
-def normalize(image):
-    image = cv2.cvtColor(image, cv2.COLOR_BGR2LAB)
-    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(target_size_, target_size_))
-    image[:, :, 0] = clahe.apply(image[:, :, 0])
-    return image
-
-
 def prepare_data(img_label):
     print('load img ' + DIR + img_label + '.jpg')
     img = keras.preprocessing.image.load_img(
         DIR + img_label + '.jpg', target_size=(target_size_, target_size_)
     )
+    # img = tf.image.resize(img, [target_size_, target_size_], antialias=True)
+    # img = tf.cast(img, tf.float32) / 255.0
     img_array = keras.preprocessing.image.img_to_array(img)
     img_array = tf.expand_dims(img_array, 0)  # Create batch axis
-    img_array = tf.image.per_image_standardization(img_array)
+    # img_array = tf.image.per_image_standardization(img_array)
     return img_array
 
 

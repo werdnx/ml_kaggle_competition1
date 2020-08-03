@@ -1,8 +1,11 @@
-batch_size_ = batch_size = 6
+batch_size_ = batch_size = 10
 # size of images
-target_size_ = 456
-epochs_ = 15
+target_size_ = 380
+epochs_ = 12
 
-iteration = '15'
-model_name = 'model5_EfficientNetB5_gen_' + str(target_size_) + '_' + str(batch_size_) + '_' + str(
+# hyperparams
+label_smooth_fac = 0.05
+
+iteration = '17'
+model_name = 'model7_EfficientNetB3B4B5_gen_' + str(target_size_) + '_' + str(batch_size_) + '_' + str(
     epochs_) + '_' + iteration

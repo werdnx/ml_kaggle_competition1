@@ -9,5 +9,6 @@ RUN pip install -U scikit-learn scipy matplotlib
 #RUN pip install -U efficientnet
 RUN pip install pandas
 RUN pip install tensorflow_datasets
+RUN pip install matplotlib
 
-CMD ["python","-u","learn.py"]
+CMD ["python","-u","main.py"]

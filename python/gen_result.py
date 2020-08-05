@@ -1,6 +1,6 @@
 import csv
 
-from model_params import model_name
+from python.old.ensemble.model_params import model_name
 
 threashold = 0.01
 

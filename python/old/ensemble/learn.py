@@ -1,5 +1,5 @@
 import time
-from gen_learn2 import run
+from gen_learn_ensemble_bad import run
 
 
 def main():

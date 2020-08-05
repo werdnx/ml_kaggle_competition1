@@ -1,18 +1,12 @@
 from keras.preprocessing.image import ImageDataGenerator
-from keras import applications
 from efficientnet.keras import EfficientNetB3
-from keras import callbacks
-from keras.models import Sequential
-from keras.layers import Dense
 from keras.optimizers import Adam
-from keras.layers import Dense, Dropout, Flatten, Conv2D, MaxPool2D, GlobalMaxPooling2D, GlobalAveragePooling2D, \
-    BatchNormalization
-from keras.models import Sequential, Model, load_model
-import cv2
+from keras.layers import Dense, Dropout, GlobalMaxPooling2D, BatchNormalization
+from keras.models import Sequential
 import pandas as pd
 import time
 
-from python.model_params import batch_size, target_size_, batch_size_, epochs_, model_name
+from python.old.ensemble.model_params import batch_size, target_size_, batch_size_, epochs_, model_name
 
 CLASSES = 2
 

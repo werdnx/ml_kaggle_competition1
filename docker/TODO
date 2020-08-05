@@ -1,4 +1,7 @@
-ansemble -> freeze model
+1. KFOLD small dataset
+2. KFOLD all dataset
+3. KFORD with fine tuning
+
 
 
 resize 600-> no hair -> central crop->normalize -> gausian blur

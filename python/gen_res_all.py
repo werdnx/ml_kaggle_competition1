@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 
 thresholds = [0.001, 0.005, 0.01, 0.05, 0.1, 0.15, 0.2, 0.25,  0.3, 0.35, 0.4, 0.45, 0.5, 0.6, 0.7]
-filename_stat = 'result_stat_model7_EfficientNetB3B4B5_gen_380_10_12_17.csv'
+filename_stat = 'result_stat_model8_EfficientNetB3B4_gen_380_2_5_18.csv'
 DIR = '/Users/dmitrenkoandrey/PycharmProjects/ml_kaggle_competition1/result'
 
 

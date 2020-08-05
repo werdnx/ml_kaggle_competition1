@@ -1,18 +1,22 @@
 from tensorflow import keras
+import time
 from keras.models import load_model
 import logging
 import csv
 import numpy as np
 import cv2
+from keras.optimizers import SGD, Adam
+from tensorflow.keras.applications import EfficientNetB6
 import time
 import tensorflow as tf
+from utils import normalize_image_tf
 
-from python.old.ensemble.model_params import target_size_, model_name
+from model_params import target_size_, model_name
 
 TARGET_ROWS = target_size_
 TARGET_COLS = target_size_
 CHANNELS = 3
-DIR = '/input/jpeg/test512_nohair_croped/'
+DIR = '/input/jpeg/test512_nohair/'
 
 
 def read_data(path):
@@ -32,12 +36,16 @@ def read_data(path):
 
 
 def prepare_data(img_label):
-    X = np.zeros((1, TARGET_ROWS, TARGET_ROWS, CHANNELS), dtype=np.uint8)
-    #print ('read img ' + DIR + img_label + '.jpg')
-    img = read_image(DIR + img_label + '.jpg')
-    # X[0, :] = img
-    X[0, :] = cv2.resize(img, (TARGET_ROWS, TARGET_COLS), interpolation=cv2.INTER_CUBIC)
-    return X
+    print('load img ' + DIR + img_label + '.jpg')
+    img = keras.preprocessing.image.load_img(
+        DIR + img_label + '.jpg', target_size=(target_size_, target_size_)
+    )
+    img_array = keras.preprocessing.image.img_to_array(img)
+    img_array = tf.expand_dims(img_array, 0)  # Create batch axis
+    img_array = tf.image.resize(img_array, [target_size_, target_size_], antialias=True)
+    img_array = tf.cast(img_array, tf.float32) / 255.0
+    # img_array = tf.image.per_image_standardization(img_array)
+    return img_array
 
 
 def read_image(file_path):
@@ -57,17 +65,22 @@ def main():
     # adam = Adam(lr=0.0001)
     model = load_model('/output/' + model_name)
     model.summary()
-    optimizer = tf.keras.optimizers.Adam(learning_rate=1e-4)
-    model.compile(
-        optimizer=optimizer, loss="categorical_crossentropy", metrics=["accuracy"]
-    )
+    # optimizer = tf.keras.optimizers.Adam(learning_rate=1e-4)
+    # model.compile(
+    #     optimizer=optimizer, loss="categorical_crossentropy", metrics=["accuracy"]
+    # )
     i = 0
     for image in images:
-        test_set = prepare_data(image)
-        #????
-        x_test = test_set / 255
-        result = model.predict(x_test)
-        stat_rows.append((image, result[0][0], result[0][1]))
+        img_array = prepare_data(image)
+        # ????
+        result = model.predict(img_array)
+        # print ('result is ' + str(result))
+        # print ('result[0] is ' + str(result[0]))
+        # print ('result[1] is ' + str(result[1]))
+        # print ('result[1,0] is ' + str(result[1][0]))
+        print ('result is ' + str(result[1][0][0]) + ' ' + str(result[1][0][1]))
+        # print ('result[1,0, 1] is ' + str(result[1][0][1]))
+        stat_rows.append((image, result[1][0][0], result[1][0][1]))
         # if result[0][1] > 0.4:
         #     rows.append((image, '1'))
         #     print('1')
@@ -77,7 +90,6 @@ def main():
         # #rows.append((image, np.argmax(result)))
         # i = i + 1
         # print('result1 ' + str(i))
-        print (result)
 
     # exit(0)
     filename_stat = '/output/result_stat_' + model_name + '.csv'

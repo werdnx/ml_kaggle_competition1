@@ -34,15 +34,26 @@ def input_preprocess_train(image, label):
     return image, label
 
 
-def unfreeze_model(model):
+def unfreeze_model(b3, b4, model):
     # We unfreeze the top 20 layers while leaving BatchNorm layers frozen
-    for layer in model.layers[-20:]:
+    for layer in b3.layers[-20:]:
+        if not isinstance(layer, layers.BatchNormalization):
+            layer.trainable = True
+
+    for layer in b4.layers[-20:]:
         if not isinstance(layer, layers.BatchNormalization):
             layer.trainable = True
 
     optimizer = tf.keras.optimizers.Adam(learning_rate=1e-4)
     model.compile(
-        optimizer=optimizer, loss="categorical_crossentropy", metrics=["accuracy"]
+        optimizer=optimizer, loss=[
+            tf.keras.losses.CategoricalCrossentropy(
+                label_smoothing=label_smooth_fac),
+            tf.keras.losses.CategoricalCrossentropy(
+                label_smoothing=label_smooth_fac),
+            # tf.keras.losses.CategoricalCrossentropy(
+            #     label_smoothing=label_smooth_fac)
+        ], metrics=[tf.keras.metrics.AUC(name='auc')]
     )
     return model
 
@@ -108,9 +119,9 @@ def run():
     model = tf.keras.Model(model_input, outputs, name='aNetwork')
     model.summary()
 
-    # optimizer = tf.keras.optimizers.Adam(learning_rate=1e-2)
+    optimizer = tf.keras.optimizers.Adam(learning_rate=1e-2)
     model.compile(
-        optimizer='adam', loss=[
+        optimizer=optimizer, loss=[
             tf.keras.losses.CategoricalCrossentropy(
                 label_smoothing=label_smooth_fac),
             tf.keras.losses.CategoricalCrossentropy(
@@ -119,11 +130,13 @@ def run():
             #     label_smoothing=label_smooth_fac)
         ], metrics=[tf.keras.metrics.AUC(name='auc')]
     )
-    # epochs = int(2 * (float(epochs_) / 3))  # @param {type: "slider", min:8, max:80}
-    epochs = epochs_
+    epochs = int(2 * (float(epochs_) / 3))  # @param {type: "slider", min:8, max:80}
+    # epochs = epochs_
     hist = model.fit(ds_train, epochs=epochs, validation_data=ds_test, verbose=1)
+    print(hist.history)
+    model.save('/output/freeze_' + model_name)
+    model = unfreeze_model(b3, b4, model)
+    epochs = int((float(epochs_) / 3))  # @param {type: "slider", min:8, max:50}
+    hist = model.fit(ds_train, epochs=epochs, validation_data=ds_test, verbose=1)
+    print(hist.history)
     model.save('/output/' + model_name)
-    # model = unfreeze_model(model)
-    # epochs = int((float(epochs_) / 3))  # @param {type: "slider", min:8, max:50}
-    # hist = model.fit(ds_train, epochs=epochs, validation_data=ds_test, verbose=2)
-    # model.save('/output/' + model_name)

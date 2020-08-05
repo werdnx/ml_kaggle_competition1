@@ -10,4 +10,4 @@ RUN pip install -U scikit-learn scipy matplotlib
 RUN pip install pandas
 RUN pip install tensorflow_datasets
 
-CMD ["python","-u","predict2.py"]
+CMD ["python","-u","predict_ensemble.py"]

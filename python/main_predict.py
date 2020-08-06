@@ -1,27 +1,16 @@
-import pandas as pd, numpy as np
+import numpy as np
+import pandas as pd
 import tensorflow as tf
-import tensorflow.keras.backend as K
-from sklearn.model_selection import KFold
-from sklearn.metrics import roc_auc_score
-import matplotlib.pyplot as plt
-from tensorflow.keras.applications import EfficientNetB0
-from tensorflow.keras.applications import EfficientNetB1
-from tensorflow.keras.applications import EfficientNetB2
-from tensorflow.keras.applications import EfficientNetB3
-from tensorflow.keras.applications import EfficientNetB4
-from tensorflow.keras.applications import EfficientNetB5
-from tensorflow.keras.applications import EfficientNetB6
 from keras.models import load_model
+from sklearn.model_selection import KFold
 
 from augmentation import count_data_items, get_dataset
-from config import FOLDS, IMG_SIZES, REPLICAS, SEED, DEVICE, EFF_NETS, BATCH_SIZES, INC2019, \
-    INC2018, VERSION, EPOCHS, TTA, WGTS, MODEL_NAME
-
+from config import FOLDS, SEED, BATCH_SIZES, MODEL_NAME, RESIZE_DICT
 from main import MODEL_PATH
-
 from main import PATH
 
-from main import VERBOSE
+IMG_SIZES = [128, 192, 256]
+EFF_NETS = [0, 1, 2]
 
 
 def main():
@@ -41,18 +30,36 @@ def main():
 
         files_test = np.sort(np.array(tf.io.gfile.glob(GCS_PATH[fold] + '/test*.tfrec')))
 
+        target_size_ = -1
+        for item in RESIZE_DICT:
+            if item[0] == EFF_NETS[fold]:
+                target_size_ = item[1]
+
         model = load_model(MODEL_PATH + MODEL_NAME + 'fold-%i-%ix%i.model' % (fold, IMG_SIZES[fold], IMG_SIZES[fold]))
         model.summary()
 
         # PREDICT TEST USING TTA
         print('Predicting Test with TTA...')
-        ds_test = get_dataset(files_test, labeled=False, return_image_names=False, augment=True,
-                              repeat=True, shuffle=False, dim=IMG_SIZES[fold], batch_size=BATCH_SIZES[fold])
-        ct_test = count_data_items(files_test)
-        STEPS = TTA * ct_test / BATCH_SIZES[fold] / 4 / REPLICAS
-        pred = model.predict(ds_test, steps=STEPS, verbose=VERBOSE)[:TTA * ct_test, ]
-        # preds[:, 0] += np.mean(pred.reshape((ct_test, TTA), order='F'), axis=1) * WGTS[fold]
-        print(pred)
+        ds_test = get_dataset(files_test, labeled=False, return_image_names=True, augment=False,
+                              repeat=False, shuffle=False, dim=target_size_, batch_size=BATCH_SIZES[fold])
+        # ct_test = count_data_items(files_test)
+        # STEPS = TTA * ct_test / BATCH_SIZES[fold] / 4 / REPLICAS
+        # pred = model.predict(ds_test, steps=STEPS, verbose=VERBOSE)[:TTA * ct_test, ]
+        # print(pred)
+        # print('predds')
+        # print(preds)
+        test_images_ds = ds_test.map(lambda image, image_name: image)
+        prob = model.predict(test_images_ds)
+
+        test_ids_ds = ds_test.map(lambda image, image_name: image_name).unbatch()
+        test_ids = next(iter(test_ids_ds.batch(count_data_items(files_test)))).numpy().astype(
+            'U')  # all in one batch
+        pred_df = pd.DataFrame({'image_name': test_ids, 'target': prob[:, 0]})
+        sub = pd.read_csv('/input/sample_submission.csv')
+        sub.drop('target', inplace=True, axis=1)
+        sub = sub.merge(pred_df, on='image_name')
+        sub.to_csv('/output/fold_model/submission_' + str(IMG_SIZES[fold]) + '.csv', index=False)
+
 
 if __name__ == "__main__":
     main()

@@ -2,7 +2,7 @@ import numpy as np
 import tensorflow as tf, re, math
 import tensorflow.keras.backend as K
 
-from config import ROT_, SHR_, HSHIFT_, WSHIFT_, HZOOM_, WZOOM_, REPLICAS
+from config import ROT_, SHR_, HSHIFT_, WSHIFT_, HZOOM_, WZOOM_, REPLICAS, RESIZE_DICT
 
 AUTO = tf.data.experimental.AUTOTUNE
 
@@ -104,8 +104,8 @@ def read_unlabeled_tfrecord(example, return_image_name):
 
 def prepare_image(img, augment=True, dim=256):
     img = tf.image.decode_jpeg(img, channels=3)
+    img = tf.image.resize(img, [dim, dim], antialias=True)
     img = tf.cast(img, tf.float32) / 255.0
-
     if augment:
         img = transform(img, DIM=dim)
         img = tf.image.random_flip_left_right(img)
@@ -128,7 +128,7 @@ def count_data_items(filenames):
 def get_dataset(files, augment=False, shuffle=False, repeat=False,
                 labeled=True, return_image_names=True, batch_size=16, dim=256):
     ds = tf.data.TFRecordDataset(files, num_parallel_reads=AUTO)
-    ds = ds.cache()
+    # ds = ds.cache()
 
     if repeat:
         ds = ds.repeat()
@@ -149,6 +149,6 @@ def get_dataset(files, augment=False, shuffle=False, repeat=False,
                                                imgname_or_label),
                 num_parallel_calls=AUTO)
 
-    ds = ds.batch(batch_size * REPLICAS)
+    ds = ds.batch(batch_size * REPLICAS * 2)
     ds = ds.prefetch(AUTO)
     return ds

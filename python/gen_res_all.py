@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 
 thresholds = [0.001, 0.005, 0.01, 0.05, 0.1, 0.15, 0.2, 0.25,  0.3, 0.35, 0.4, 0.45, 0.5, 0.6, 0.7]
-filename_stat = 'result_stat_model8_EfficientNetB3B4_gen_380_2_5_18.csv'
+filename_stat = 'ensembled_with_features.csv'
 DIR = '/Users/dmitrenkoandrey/PycharmProjects/ml_kaggle_competition1/result'
 
 
@@ -13,15 +13,20 @@ def main():
         rows = []
         mal = 0
         bel = 0
+        line_count = 0
         with open(DIR + '/' + filename_stat) as csv_file:
             csv_reader = csv.reader(csv_file, delimiter=',')
             for row in csv_reader:
-                if float(row[2]) > threshold:
-                    rows.append((row[0], '1'))
-                    mal = mal + 1
+                if line_count == 0:
+                    # print('Column names are ', ", ".join(row))
+                    line_count += 1
                 else:
-                    rows.append((row[0], '0'))
-                    bel = bel + 1
+                    if float(row[1]) > threshold:
+                        rows.append((row[0], '1'))
+                        mal = mal + 1
+                    else:
+                        rows.append((row[0], '0'))
+                        bel = bel + 1
 
         filename = DIR + '/result/' + filename_stat + '/' + str(threshold) + '.csv'
         # writing to csv file

@@ -3,7 +3,8 @@ import tensorflow as tf, re, math
 import tensorflow.keras.backend as K
 
 from config import ROT_, SHR_, HSHIFT_, WSHIFT_, HZOOM_, WZOOM_, REPLICAS
-from main import AUTO
+
+AUTO = tf.data.experimental.AUTOTUNE
 
 
 def get_mat(rotation, shear, height_zoom, width_zoom, height_shift, width_shift):

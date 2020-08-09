@@ -1,9 +1,10 @@
-import pandas as pd, numpy as np
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 import tensorflow as tf
 import tensorflow.keras.backend as K
-from sklearn.model_selection import KFold
 from sklearn.metrics import roc_auc_score
-import matplotlib.pyplot as plt
+from sklearn.model_selection import KFold
 from tensorflow.keras.applications import EfficientNetB0
 from tensorflow.keras.applications import EfficientNetB1
 from tensorflow.keras.applications import EfficientNetB2
@@ -13,7 +14,7 @@ from tensorflow.keras.applications import EfficientNetB5
 from tensorflow.keras.applications import EfficientNetB6
 
 from augmentation import count_data_items, get_dataset
-from config import FOLDS, IMG_SIZES, REPLICAS, SEED, DEVICE, EFF_NETS, BATCH_SIZES, INC2019, \
+from python.old.kfold.config_kfold import FOLDS, IMG_SIZES, REPLICAS, SEED, EFF_NETS, BATCH_SIZES, INC2019, \
     INC2018, VERSION, EPOCHS, TTA, WGTS
 
 AUTO = tf.data.experimental.AUTOTUNE

@@ -1,10 +1,8 @@
-import math
 import numpy as np
-import re
-import tensorflow as tf
+import tensorflow as tf, re, math
 import tensorflow.keras.backend as K
 
-from config import ROT_, SHR_, HSHIFT_, WSHIFT_, HZOOM_, WZOOM_
+from python.old.kfold.config_kfold import ROT_, SHR_, HSHIFT_, WSHIFT_, HZOOM_, WZOOM_
 
 AUTO = tf.data.experimental.AUTOTUNE
 
@@ -151,6 +149,6 @@ def get_dataset(files, augment=False, shuffle=False, repeat=False,
                                                imgname_or_label),
                 num_parallel_calls=AUTO)
 
-    ds = ds.batch(batch_size, drop_remainder=True)
-    # ds = ds.prefetch(AUTO)
+    ds = ds.batch(batch_size)
+    ds = ds.prefetch(AUTO)
     return ds

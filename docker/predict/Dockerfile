@@ -10,4 +10,4 @@ RUN pip install -U scikit-learn scipy matplotlib
 RUN pip install pandas
 RUN pip install tensorflow_datasets
 
-CMD ["python","-u","main_predict.py"]
+CMD ["python","-u","-W ignore","main_predict.py"]

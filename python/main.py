@@ -10,13 +10,12 @@ from tensorflow.keras.applications import EfficientNetB5
 from tensorflow.keras.applications import EfficientNetB6
 
 from augmentation import count_data_items, get_dataset
-from config import IMG_SIZE, SEED, EFF_NET, BATCH_SIZE, INC2019, INC2018, RESIZE_DICT, EPOCHS, MODEL_NAME, FOLDS
+from config import IMG_SIZE, SEED, EFF_NET, BATCH_SIZE, INC2019, INC2018, RESIZE_DICT, EPOCHS, MODEL_NAME
 
 AUTO = tf.data.experimental.AUTOTUNE
 PATH = '/input/5fold/'
 MODEL_PATH = '/output/fold_model/'
 VERBOSE = 1
-DISPLAY_PLOT = False
 EFNS = [EfficientNetB0, EfficientNetB1, EfficientNetB2, EfficientNetB3,
         EfficientNetB4, EfficientNetB5, EfficientNetB6]
 
@@ -105,20 +104,21 @@ def main():
         files_valid = tf.io.gfile.glob([GCS_PATH + '/train%.2i*.tfrec' % x for x in idxV])
         # TRAIN
         print('Training...')
-        fold_iteration(files_train, files_valid, model, target_size_)
+        for epoch in range(0, EPOCHS):
+            fold_iteration(files_train, files_valid, model, target_size_, epoch, fold)
 
     model.save(MODEL_PATH + MODEL_NAME + 'efnet_' + str(EFF_NET) + '_fold-%i-%ix%i.model' % (
         fold, IMG_SIZE, IMG_SIZE))
 
 
-def fold_iteration(files_train, files_valid, model, target_size_):
+def fold_iteration(files_train, files_valid, model, target_size_, epoch, fold):
     dataset = get_dataset(files_train, augment=True, shuffle=True, repeat=True, dim=target_size_,
                           batch_size=BATCH_SIZE)
     validation_data = get_dataset(files_valid, augment=False, shuffle=False, repeat=False,
                                   dim=target_size_)
     count_data = count_data_items(files_train) / BATCH_SIZE
     history = model.fit(dataset,
-                        epochs=int(EPOCHS / FOLDS),
+                        epochs=1,
                         callbacks=[  # sv,
                             get_lr_callback(BATCH_SIZE)],
                         steps_per_epoch=count_data,
@@ -126,6 +126,9 @@ def fold_iteration(files_train, files_valid, model, target_size_):
                         verbose=VERBOSE,
                         batch_size=BATCH_SIZE
                         )
+    model.save(MODEL_PATH + MODEL_NAME + 'efnet_' + str(EFF_NET) + '_iter' + str(
+        epoch) + '_' + '_fold-%i-%ix%i.model' % (
+                   fold, IMG_SIZE, IMG_SIZE))
 
 
 if __name__ == "__main__":

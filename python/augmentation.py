@@ -1,6 +1,7 @@
 import math
-import numpy as np
 import re
+
+import numpy as np
 import tensorflow as tf
 import tensorflow.keras.backend as K
 
@@ -106,7 +107,10 @@ def read_unlabeled_tfrecord(example, return_image_name):
 
 def prepare_image(img, augment=True, dim=256):
     img = tf.image.decode_jpeg(img, channels=3)
-    img = tf.image.resize(img, [dim, dim], antialias=True)
+    height = img.shape[0]
+    width = img.shape[1]
+    if dim != height or dim != width:
+        img = tf.image.resize(img, [dim, dim], antialias=True)
     img = tf.cast(img, tf.float32) / 255.0
     if augment:
         img = transform(img, DIM=dim)

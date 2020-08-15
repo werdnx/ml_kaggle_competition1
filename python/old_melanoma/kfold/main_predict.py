@@ -6,8 +6,8 @@ from sklearn.model_selection import KFold
 
 from augmentation import count_data_items, get_dataset
 from python.old.kfold.config_kfold import FOLDS, SEED, BATCH_SIZES, MODEL_NAME, RESIZE_DICT
-from main import MODEL_PATH
-from main import PATH
+from main_learn import MODEL_PATH
+from main_learn import PATH
 
 IMG_SIZES = [128, 192, 256]
 EFF_NETS = [0, 1, 2]

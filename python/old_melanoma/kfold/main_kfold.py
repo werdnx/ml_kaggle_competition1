@@ -1,6 +1,5 @@
 import numpy as np
 import tensorflow as tf
-import tensorflow.keras.backend as K
 from sklearn.model_selection import KFold
 from tensorflow.keras.applications import EfficientNetB0
 from tensorflow.keras.applications import EfficientNetB1
@@ -10,7 +9,7 @@ from tensorflow.keras.applications import EfficientNetB4
 from tensorflow.keras.applications import EfficientNetB5
 from tensorflow.keras.applications import EfficientNetB6
 
-from python.augmentation import count_data_items, get_dataset
+from python.melanoma.augmentation import count_data_items, get_dataset
 from config_kfold import FOLDS, IMG_SIZES, REPLICAS, SEED, EFF_NETS, BATCH_SIZES, INC2019, \
     INC2018, EPOCHS, MODEL_NAME, RESIZE_DICT, EPOCH_PER_STEP
 

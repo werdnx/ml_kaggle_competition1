@@ -38,8 +38,8 @@ def model_check(X_train, y_train, estimators, cv):
 
 
 def main():
-    train_file = '/Users/dmitrenkoandrey/PycharmProjects/ml_kaggle_competition1/resources/melanoma/train.csv'
-    test_file = '/Users/dmitrenkoandrey/PycharmProjects/ml_kaggle_competition1/resources/melanoma/test.csv'
+    train_file = '/resources/melanoma/train.csv'
+    test_file = '/resources/melanoma/test.csv'
 
     train = pd.read_csv(train_file)
     test = pd.read_csv(test_file)
@@ -69,11 +69,11 @@ def main():
     train['sex'].fillna(train['sex'].mode()[0], inplace=True)
 
     train['age'].fillna(train['age'].median(), inplace=True)
-    train40 = pd.read_csv('/Users/dmitrenkoandrey/PycharmProjects/ml_kaggle_competition1/resources/melanoma/add_features/train40Features.csv')
-    test40 = pd.read_csv('/Users/dmitrenkoandrey/PycharmProjects/ml_kaggle_competition1/resources/melanoma/add_features/test40Features.csv')
+    train40 = pd.read_csv('/resources/melanoma/add_features/train40Features.csv')
+    test40 = pd.read_csv('/resources/melanoma/add_features/test40Features.csv')
 
-    trainmet = pd.read_csv('/Users/dmitrenkoandrey/PycharmProjects/ml_kaggle_competition1/resources/melanoma/add_features/trainMetrics.csv')
-    testmet = pd.read_csv('/Users/dmitrenkoandrey/PycharmProjects/ml_kaggle_competition1/resources/melanoma/add_features/testMetrics.csv')
+    trainmet = pd.read_csv('/resources/melanoma/add_features/trainMetrics.csv')
+    testmet = pd.read_csv('/resources/melanoma/add_features/testMetrics.csv')
     train40.drop(['sex', 'age_approx', 'anatom_site_general_challenge'],
                  axis=1,
                  inplace=True)
@@ -154,7 +154,7 @@ def main():
     meta_df = pd.DataFrame(columns=['image_name', 'target'])
 
     # assigning predictions on submission df
-    sample = pd.read_csv('/Users/dmitrenkoandrey/PycharmProjects/ml_kaggle_competition1/resources/melanoma/add_features/sample_submission.csv')
+    sample = pd.read_csv('/resources/melanoma/add_features/sample_submission.csv')
 
     meta_df['image_name'] = sample['image_name']
     meta_df['target'] = predictions

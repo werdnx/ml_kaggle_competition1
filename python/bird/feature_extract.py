@@ -7,11 +7,8 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 import tensorflow as tf
-from keras.utils import to_categorical
 from numpy import save
 from scipy.ndimage import maximum_filter1d
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import LabelEncoder
 from sklearn.utils import shuffle
 from tqdm import tqdm
 
@@ -23,7 +20,7 @@ sns.set()
 TRAIN_DIR = '/input/'
 EPOCHS = 10
 BATCH_SIZE = 32
-SAMPLES = 512
+SAMPLES = 256
 
 
 def audio_to_spec(audio, sr):
@@ -61,6 +58,46 @@ def extract_features(file_name):
     return np.append(mfccs_processed, mel_processed)
 
 
+## Пройтись по каждому файлу
+## нарезать файл по 5 сек
+def extract_features_mfcc_mel(file_path, folder_path, name):
+    # wave_data, wave_rate = librosa.load(file_name)
+    if os.path.exists(folder_path + '/' + name + '_mfccs_m.npy') or not os.path.exists(file_path):
+        return
+    else:
+        restored = np.load(file_path, allow_pickle=True)
+        wave_data = restored[0][0]
+        wave_rate = restored[0][1]
+        # wave_data, _ = librosa.effects.trim(wave_data)
+        # only take 5s samples and add them to the dataframe
+        sample_length = 5 * wave_rate
+        i = 0
+        correlation_arr = []
+        for idx in range(0, len(wave_data), sample_length):
+            song_sample = wave_data[idx:idx + sample_length]
+            if len(song_sample) >= sample_length:
+                correlation_arr.append([])
+                # mel = librosa.feature.melspectrogram(song_sample, n_mels=SAMPLES)
+                # db = librosa.power_to_db(mel)
+                mfccs = librosa.feature.mfcc(y=song_sample, sr=wave_rate, n_mfcc=SAMPLES)
+                mfccs_processed = np.mean(mfccs.T, axis=0)
+                correlation_arr[i].append(mfccs_processed)
+                i = i + 1
+                # db_name = name + '_db_' + str(idx)
+                # save_to_file(db, folder_path, db_name)
+                # mfccs_name = name + '_mfccs_' + str(idx)
+                # path = save_to_file(mfccs, folder_path, mfccs_name)
+                # correlation_arr = np.append(correlation_arr, (class_label, path))
+        save_to_file(correlation_arr, folder_path, name + '_mfccs_m')
+
+
+def extract_waves(file_name, folder_path, name):
+    wave_data, wave_rate = librosa.load(file_name)
+    wave_data, _ = librosa.effects.trim(wave_data)
+    data = [(wave_data, wave_rate)]
+    save_to_file(data, folder_path, name)
+
+
 def build_model_graph(num_labels, input_shape=(40,)):
     model = tf.keras.models.Sequential()
     model.add(tf.keras.layers.Dense(256))
@@ -79,6 +116,7 @@ def build_model_graph(num_labels, input_shape=(40,)):
 def save_to_file(data, audio_file_path, file_name):
     path = audio_file_path + '/' + file_name + '.npy'
     save(path, data)
+    return path
 
 
 # print('save file ' + path)
@@ -105,42 +143,19 @@ def main():
                 audio_file_path += row.ebird_code
                 class_label = row["ebird_code"]
                 parts = row.filename.split(".")
-                if os.path.exists(audio_file_path + '/' + parts[0] + '.npy'):
-                    print('skip file ' + audio_file_path + '/' + parts[0] + '.npy')
-                    # data = np.load(audio_file_path + '/' + parts[0] + '.npy')
-                    # features.append([data, class_label])
-                else:
-                    # print('file does no EXIST ' + audio_file_path + '/' + parts[0] + '.npy')
-                    print('procces file ' + '{}/{}'.format(audio_file_path, row.filename))
-                    data = extract_features('{}/{}'.format(audio_file_path, row.filename))
-                    save_to_file(data, audio_file_path, parts[0])
-                    features.append([data, class_label])
+                # if os.path.exists(audio_file_path + '/' + parts[0] + '.npy'):
+                #     print('skip file ' + audio_file_path + '/' + parts[0] + '.npy')
+                # data = np.load(audio_file_path + '/' + parts[0] + '.npy')
+                # features.append([data, class_label])
+                # else:
+                # print('file does no EXIST ' + audio_file_path + '/' + parts[0] + '.npy')
+                # print('procces file ' + '{}/{}'.format(audio_file_path, row.filename))
+                # extract_waves('{}/{}'.format(audio_file_path, row.filename), audio_file_path, parts[0])
+                extract_features_mfcc_mel('{}/{}.npy'.format(audio_file_path, parts[0]), audio_file_path, parts[0])
+                # save_to_file(data, audio_file_path, parts[0])
+                # features.append([data, class_label])
             except ZeroDivisionError:
                 print("{} is corrupted".format(audio_file_path))
-
-    featuresdf = pd.DataFrame(features, columns=['feature', 'class_label'])
-    featuresdf.head()
-    X = np.array(featuresdf.feature.tolist())
-    y = np.array(featuresdf.class_label.tolist())
-    le = LabelEncoder()
-    yy = to_categorical(le.fit_transform(y))
-    x_train, x_test, y_train, y_test = train_test_split(X, yy, test_size=0.2, random_state=42)
-    num_labels = yy.shape[1]
-    model = build_model_graph(num_labels)
-
-    # model.summary()
-    # Calculate pre-training accuracy
-    # score = model.evaluate(x_test, y_test, verbose=0)
-    # accuracy = 100 * score[1]
-    # print("Pre-training accuracy: %.4f%%" % accuracy)
-
-    model.fit(x_train, y_train, batch_size=BATCH_SIZE, epochs=EPOCHS, validation_data=(x_test, y_test),
-              verbose=1)
-    # Evaluating the model on the training and testing set
-    score = model.evaluate(x_train, y_train, verbose=1)
-    print("Training Accuracy: {0:.2%}".format(score[1]))
-    score = model.evaluate(x_test, y_test, verbose=1)
-    print("Testing Accuracy: {0:.2%}".format(score[1]))
 
 
 if __name__ == "__main__":

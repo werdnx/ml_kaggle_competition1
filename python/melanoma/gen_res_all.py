@@ -3,9 +3,12 @@ import os
 
 from pathlib import Path
 
-thresholds = [0.001, 0.005, 0.01, 0.02, 0.03, 0.04, 0.045, 0.048, 0.05, 0.055, 0.06, 0.07, 0.08, 0.09, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.6, 0.7]
-filename_stat = 'submission2_4fold_efnet_5_iter1__fold-1-512x512.model.csv'
-DIR = '/result'
+thresholds = [0.001, 0.005, 0.01, 0.02, 0.03, 0.04, 0.045, 0.046, 0.047, 0.048, 0.049, 0.05, 0.051, 0.052, 0.053, 0.054,
+              0.055, 0.056, 0.057, 0.058, 0.059, 0.06, 0.061, 0.062, 0.063, 0.064, 0.065, 0.066, 0.067, 0.068, 0.069,
+              0.07, 0.08, 0.09, 0.1, 0.15, 0.2,
+              0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.6, 0.7]
+filename_stat = 'ensembled_b6_40_meta.csv'
+DIR = '/Users/dmitrenkoandrey/PycharmProjects/ml_kaggle_competition1/result'
 
 
 def main():
@@ -29,7 +32,7 @@ def main():
                         rows.append((row[0], '0'))
                         bel = bel + 1
 
-        filename = DIR + '/result/' + filename_stat + '/' + str(threshold) + '.csv'
+        filename = DIR + '/result/' + filename_stat + '/' + str(threshold) + '_' + str(mal) + '.csv'
         # writing to csv file
         if os.path.exists(filename):
             os.remove(filename)

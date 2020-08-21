@@ -15,5 +15,6 @@ RUN pip install soundfile
 RUN apt-get install -y libsndfile1
 RUN pip install seaborn
 RUN apt-get install -y ffmpeg
+RUN pip install noisereduce
 
-CMD ["python","-u","main_learn.py"]
+CMD ["python","-u","feature_extract.py"]

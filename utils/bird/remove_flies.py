@@ -17,7 +17,9 @@ def main():
                 file_path = os.path.join(root, filename)
 
                 print('\t- file %s (full path: %s)' % (filename, file_path))
-                os.remove(file_path)
+                parts = filename.split(".")
+                if parts[1] == 'npy':
+                    os.remove(file_path)
                 # with open(file_path, 'rb') as f:
                 #     f_content = f.read()
                 #     list_file.write(('The file %s contains:\n' % filename).encode('utf-8'))

@@ -10,14 +10,14 @@ from sklearn.utils import shuffle
 from tqdm import tqdm
 
 sns.set()
-TRAIN_DIR = '/media/3tstor/ml/IdeaProjects/ml_kaggle_competition1/input/bird/'
-OUT_DIR = '/media/3tstor/ml/IdeaProjects/ml_kaggle_competition1/input/bird/mel/'
+TRAIN_DIR = '/input/'
+OUT_DIR = '/output/mel/'
+DF = '/output/mel/samples_df'
 
 
-def mono_to_color(
-        X: np.ndarray, mean=None, std=None,
-        norm_max=None, norm_min=None, eps=1e-6
-):
+def mono_to_color(X, mean=None, std=None,
+                  norm_max=None, norm_min=None, eps=1e-6
+                  ):
     # Stack X as [X,X,X]
     X = np.stack([X, X, X], axis=-1)
 
@@ -48,29 +48,26 @@ samples_from_file = []
 
 
 def extract_features_mfcc_mel(file_path, folder_path, name, class_label):
-    if os.path.exists(folder_path + '/' + name + '_mfccs_m.npy') or not os.path.exists(file_path):
-        return
-    else:
-        restored = np.load(file_path, allow_pickle=True)
-        wave_data = restored[0][0]
-        wave_rate = restored[0][1]
-        sample_length = 5 * wave_rate
-        i = 0
-        correlation_arr = []
-        for idx in range(0, len(wave_data), sample_length):
-            song_sample = wave_data[idx:idx + sample_length]
-            if len(song_sample) >= sample_length:
-                correlation_arr.append([])
-                mel = librosa.feature.melspectrogram(song_sample, n_mels=SAMPLES)
-                db = librosa.power_to_db(mel).astype(np.float32)
-                image = mono_to_color(db)
-                height, width, _ = image.shape
-                image = cv2.resize(image, (int(width * IMG_SIZE / height), IMG_SIZE))
-                image = np.moveaxis(image, 2, 0)
-                image = (image / 255.0).astype(np.float32)
-                filename = str(uuid4()) + ".tif"
-                cv2.imwrite(OUT_DIR + filename, image)
-                samples_from_file.append({"song_sample": "{}{}".format(OUT_DIR, filename), "bird": class_label})
+    restored = np.load(file_path, allow_pickle=True)
+    wave_data = restored[0][0]
+    wave_rate = restored[0][1]
+    sample_length = 5 * wave_rate
+    i = 0
+    for idx in range(0, len(wave_data), sample_length):
+        song_sample = wave_data[idx:idx + sample_length]
+        if len(song_sample) >= sample_length:
+            mel = librosa.feature.melspectrogram(song_sample, n_mels=SAMPLES)
+            db = librosa.power_to_db(mel).astype(np.float32)
+            image = mono_to_color(db)
+            height, width, _ = image.shape
+            image = cv2.resize(image, (int(width * IMG_SIZE / height), IMG_SIZE))
+            image = np.moveaxis(image, 2, 0)
+            image = (image / 255.0).astype(np.float32)
+            filename = str(uuid4()) + ".npy"
+            # cv2.imwrite(OUT_DIR + filename, image)
+            np.save(OUT_DIR + filename, image)
+            print('save file' + filename)
+            samples_from_file.append({"song_sample": "{}{}".format(OUT_DIR, filename), "bird": class_label})
 
 
 def main():
@@ -91,10 +88,14 @@ def main():
                 parts = row.filename.split(".")
                 class_label = row["ebird_code"]
                 if os.path.exists(audio_file_path + '/' + parts[0] + '.npy'):
+                    print('process file ' + audio_file_path + '/' + parts[0] + '.npy')
                     extract_features_mfcc_mel('{}/{}.npy'.format(audio_file_path, parts[0]), audio_file_path, parts[0],
                                               class_label)
             except ZeroDivisionError:
                 print("{} is corrupted".format(audio_file_path))
+    samples_df = pd.DataFrame(samples_from_file)
+    samples_df.to_pickle(DF)
+    # df = pd.read_pickle(file_name)
 
 
 if __name__ == "__main__":

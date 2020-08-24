@@ -17,4 +17,4 @@ RUN pip install seaborn
 RUN apt-get install -y ffmpeg
 RUN pip install noisereduce
 
-CMD ["python","-u","feature_extract.py"]
+CMD ["python","-u","main_learn.py"]

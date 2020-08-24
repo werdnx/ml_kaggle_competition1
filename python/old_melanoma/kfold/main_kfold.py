@@ -9,9 +9,9 @@ from tensorflow.keras.applications import EfficientNetB4
 from tensorflow.keras.applications import EfficientNetB5
 from tensorflow.keras.applications import EfficientNetB6
 
-from python.melanoma.augmentation import count_data_items, get_dataset
 from config_kfold import FOLDS, IMG_SIZES, REPLICAS, SEED, EFF_NETS, BATCH_SIZES, INC2019, \
     INC2018, EPOCHS, MODEL_NAME, RESIZE_DICT, EPOCH_PER_STEP
+from python.melanoma.augmentation import count_data_items, get_dataset
 
 AUTO = tf.data.experimental.AUTOTUNE
 PATH = '/input/5fold/'

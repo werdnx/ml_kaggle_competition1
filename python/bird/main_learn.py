@@ -29,14 +29,18 @@ def build_model():
     # base.trainable = False
     x = base(inp)
     x = tf.keras.layers.GlobalAveragePooling2D()(x)
-    # x = tf.keras.layers.BatchNormalization()(x)
-    # top_dropout_rate = 0.2
-    # x = tf.keras.layers.Dropout(top_dropout_rate, name="top_dropout")(x)
+    x = tf.keras.layers.Dropout(0.2, name="top_dropout1")(x)
+    x = tf.keras.layers.Dense(512, activation='relu')(x)
+    x = tf.keras.layers.Dropout(0.2, name="top_dropout2")(x)
+    x = tf.keras.layers.Dense(256, activation='relu')(x)
+    x = tf.keras.layers.Dropout(0.2, name="top_dropout3")(x)
+    x = tf.keras.layers.Dense(128, activation='relu')(x)
+    x = tf.keras.layers.Dropout(0.2, name="top_dropout4")(x)
     # Compile the model
     x = tf.keras.layers.Dense(labels, activation='softmax')(x)
     model = tf.keras.Model(inputs=inp, outputs=x)
     opt = tf.keras.optimizers.Adam(learning_rate=0.001)
-    model.compile(loss='categorical_crossentropy', metrics=['accuracy'], optimizer=opt)
+    model.compile(loss='categorical_crossentropy', metrics=['AUC'], optimizer=opt)
     return model
 
 

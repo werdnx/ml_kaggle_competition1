@@ -7,7 +7,7 @@ import tensorflow as tf
 from sklearn.model_selection import train_test_split
 from keras.utils import to_categorical
 from sklearn.preprocessing import LabelEncoder
-from tensorflow.keras.applications import EfficientNetB4
+from tensorflow.keras.applications import EfficientNetB0
 from config import BIRD_CODE
 
 warnings.filterwarnings('ignore')
@@ -16,7 +16,7 @@ sns.set()
 TRAIN_DIR = '/input/'
 OUT_DIR = '/output/mel/'
 EPOCHS = 10
-BATCH_SIZE = 32
+BATCH_SIZE = 16
 SAMPLES = 512
 SIZE = 224
 labels = 264
@@ -25,17 +25,18 @@ MODEL_NAME = 'effnet4_mel_noaug'
 
 def build_model():
     inp = tf.keras.layers.Input(shape=(SIZE, SIZE, 3))
-    base = EfficientNetB4(input_shape=(SIZE, SIZE, 3), weights='imagenet', include_top=False)
+    base = EfficientNetB0(input_shape=(SIZE, SIZE, 3), weights='imagenet', include_top=False)
     # base.trainable = False
     x = base(inp)
     x = tf.keras.layers.GlobalAveragePooling2D()(x)
-    x = tf.keras.layers.Dropout(0.2, name="top_dropout1")(x)
-    x = tf.keras.layers.Dense(512, activation='relu')(x)
-    x = tf.keras.layers.Dropout(0.2, name="top_dropout2")(x)
-    x = tf.keras.layers.Dense(256, activation='relu')(x)
-    x = tf.keras.layers.Dropout(0.2, name="top_dropout3")(x)
-    x = tf.keras.layers.Dense(128, activation='relu')(x)
-    x = tf.keras.layers.Dropout(0.2, name="top_dropout4")(x)
+    # x = tf.keras.layers.Dropout(0.2, name="top_dropout1")(x)
+    # x = tf.keras.layers.Dense(512, activation='relu')(x)
+    # x = tf.keras.layers.Dropout(0.2, name="top_dropout2")(x)
+    # x = tf.keras.layers.Dense(256, activation='relu')(x)
+    # x = tf.keras.layers.Dropout(0.2, name="top_dropout3")(x)
+    # x = tf.keras.layers.Dense(128, activation='relu')(x)
+    # x = tf.keras.layers.Dropout(0.2, name="top_dropout4")(x)
+    # x = tf.keras.layers.Dense(64, activation='relu')(x)
     # Compile the model
     x = tf.keras.layers.Dense(labels, activation='softmax')(x)
     model = tf.keras.Model(inputs=inp, outputs=x)
@@ -69,12 +70,12 @@ def create_dataset(df):
     print('create ds from elements ' + str(len(df)))
     ds = tf.data.Dataset.from_tensor_slices((df['song_sample'].values, df['bird'].values))
     ds = ds.map(read_labeled, num_parallel_calls=AUTO)
-    # ds = ds.batch(128, drop_remainder=True)
+    ds = ds.batch(BATCH_SIZE, drop_remainder=True)
     return ds
 
 
 def read_labeled_py(rec, rec2):
-    print('map record')
+    # print('map record')
     # print(rec)
     # print(rec2)
     # exit(1)

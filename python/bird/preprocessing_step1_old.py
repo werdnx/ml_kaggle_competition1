@@ -6,16 +6,13 @@ import librosa
 import numpy as np
 import pandas as pd
 import seaborn as sns
-import sklearn as sk
 from sklearn.utils import shuffle
-from PIL import Image
-
 from tqdm import tqdm
 
 sns.set()
 TRAIN_DIR = '/input/'
-OUT_DIR = '/output/mel_first/'
-DF = '/output/mel_first/samples_df'
+OUT_DIR = '/output/mel/'
+DF = '/output/mel/samples_df'
 
 
 def mono_to_color(X, mean=None, std=None,
@@ -46,7 +43,7 @@ def mono_to_color(X, mean=None, std=None,
 
 
 IMG_SIZE = 224
-SAMPLES = 224
+SAMPLES = 512
 samples_from_file = []
 
 
@@ -60,12 +57,16 @@ def extract_features_mfcc_mel(file_path, folder_path, name, class_label):
         song_sample = wave_data[idx:idx + sample_length]
         if len(song_sample) >= sample_length:
             mel = librosa.feature.melspectrogram(song_sample, n_mels=SAMPLES)
-            db = librosa.power_to_db(mel)
-            normalised_db = sk.preprocessing.minmax_scale(db)
-            filename = str(uuid4()) + ".tif"
-            db_array = (np.asarray(normalised_db) * 255).astype(np.uint8)
-            db_image = Image.fromarray(np.array([db_array, db_array, db_array]).T)
-            db_image.save("{}{}".format(OUT_DIR, filename))
+            db = librosa.power_to_db(mel).astype(np.float32)
+            image = mono_to_color(db)
+            height, width, _ = image.shape
+            image = cv2.resize(image, (int(width * IMG_SIZE / height), IMG_SIZE))
+            image = np.moveaxis(image, 2, 0)
+            image = (image / 255.0).astype(np.float32)
+            filename = str(uuid4()) + ".npy"
+            # cv2.imwrite(OUT_DIR + filename, image)
+            np.save(OUT_DIR + filename, image)
+            print('save file' + filename)
             samples_from_file.append({"song_sample": "{}{}".format(OUT_DIR, filename), "bird": class_label})
 
 

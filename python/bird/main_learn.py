@@ -22,6 +22,14 @@ SIZE = 224
 labels = 264
 MODEL_NAME = 'effnet4_mel_noaug'
 
+# model.add(effnet_layers)
+#
+# model.add(GlobalAveragePooling2D())
+# model.add(Dense(256, use_bias=False))
+# model.add(BatchNormalization())
+# model.add(Activation('relu'))
+# model.add(Dropout(dropout_dense_layer))
+
 
 def build_model():
     inp = tf.keras.layers.Input(shape=(SIZE, SIZE, 3))
@@ -29,7 +37,7 @@ def build_model():
     # base.trainable = False
     x = base(inp)
     x = tf.keras.layers.GlobalAveragePooling2D()(x)
-    # x = tf.keras.layers.Dropout(0.2, name="top_dropout1")(x)
+    x = tf.keras.layers.Dropout(0.4, name="top_dropout1")(x)
     # x = tf.keras.layers.Dense(512, activation='relu')(x)
     # x = tf.keras.layers.Dropout(0.2, name="top_dropout2")(x)
     # x = tf.keras.layers.Dense(256, activation='relu')(x)
@@ -100,10 +108,11 @@ def main():
 
     model = build_model()
     model.summary()
+    early_stop = tf.keras.callbacks.EarlyStopping(monitor='loss', patience=3)
     history = model.fit(train_ds,
                         epochs=EPOCHS,
                         callbacks=[  # sv,
-                            get_lr_callback(BATCH_SIZE)],
+                            get_lr_callback(BATCH_SIZE), early_stop],
                         validation_data=val_ds,  # class_weight = {0:1,1:2},
                         verbose=1,
                         shuffle=True,

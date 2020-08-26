@@ -1,5 +1,6 @@
 import warnings
 
+from tqdm import tqdm
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -9,6 +10,9 @@ from keras.utils import to_categorical
 from sklearn.preprocessing import LabelEncoder
 from tensorflow.keras.applications import EfficientNetB0
 from config import BIRD_CODE
+import cv2
+import albumentations as A
+import random
 
 warnings.filterwarnings('ignore')
 AUTO = tf.data.experimental.AUTOTUNE
@@ -21,6 +25,8 @@ SAMPLES = 512
 SIZE = 224
 labels = 264
 MODEL_NAME = 'effnet4_mel_noaug'
+SAMPLES_RESTRICTION = 1000
+
 
 # model.add(effnet_layers)
 #
@@ -37,7 +43,9 @@ def build_model():
     # base.trainable = False
     x = base(inp)
     x = tf.keras.layers.GlobalAveragePooling2D()(x)
-    x = tf.keras.layers.Dropout(0.4, name="top_dropout1")(x)
+    # x = tf.keras.layers.Dense(256, use_bias=False)(x)
+    x = tf.layers.BatchNormalization()(x)
+    x = tf.keras.layers.Dropout(0.2, name="top_dropout1")(x)
     # x = tf.keras.layers.Dense(512, activation='relu')(x)
     # x = tf.keras.layers.Dropout(0.2, name="top_dropout2")(x)
     # x = tf.keras.layers.Dense(256, activation='relu')(x)
@@ -74,10 +82,13 @@ def get_lr_callback(batch_size=8):
     return lr_callback
 
 
-def create_dataset(df):
+def create_dataset(df, augument):
     print('create ds from elements ' + str(len(df)))
     ds = tf.data.Dataset.from_tensor_slices((df['song_sample'].values, df['bird'].values))
-    ds = ds.map(read_labeled, num_parallel_calls=AUTO)
+    ds = ds.map(lambda rec1, rec2: read_labeled(rec1, rec2, augument), num_parallel_calls=AUTO)
+    if augument:
+        ds = ds.repeat()
+
     ds = ds.batch(BATCH_SIZE, drop_remainder=True)
     return ds
 
@@ -87,24 +98,60 @@ def read_labeled_py(rec, rec2):
     # print(rec)
     # print(rec2)
     # exit(1)
-    data = np.load(rec.numpy(), allow_pickle=True)
-    return tf.transpose(data), tf.one_hot(BIRD_CODE[rec2.numpy().decode("utf-8")], 264)
+    img = cv2.imread(rec.numpy(), cv2.IMREAD_COLOR)
+    img = tf.cast(img, tf.float32) / 255.0
+    return img, tf.one_hot(BIRD_CODE[rec2.numpy().decode("utf-8")], 264)
 
 
-def read_labeled(rec, rec2):
-    return tf.py_function(read_labeled_py, inp=[rec, rec2], Tout=[tf.float32, tf.float32])
+def read_labeled(rec, rec2, augument):
+    img, y = tf.py_function(read_labeled_py, inp=[rec, rec2], Tout=[tf.float32, tf.float32])
+    if augument:
+        albus = A.Cutout(max_h_size=int(img.shape[0] * 0.375), max_w_size=int(img.shape[1] * 0.375), num_holes=1, p=0.7)
+        img = albus(image=img)['image']
+
+    return img, y
+
+
+def adjust_data(df):
+    df = df.sample(frac=1)
+    samples = []
+    with tqdm(total=len(df)) as pbar:
+        for bird in df.bird.unique():
+            pbar.update(1)
+            bird_df = df[df['bird'] == bird]
+            l = len(bird_df)
+            if l > SAMPLES_RESTRICTION:
+                for i in range(0, SAMPLES_RESTRICTION):
+                    samples.append(
+                        {"song_sample": "{}{}".format(bird_df.iloc[i]['song_sample']), "bird": bird_df.iloc[i]['bird']})
+            elif l < SAMPLES_RESTRICTION:
+                for i in range(0, l):
+                    samples.append(
+                        {"song_sample": "{}{}".format(bird_df.iloc[i]['song_sample']), "bird": bird_df.iloc[i]['bird']})
+                for i in range(SAMPLES_RESTRICTION - l, SAMPLES_RESTRICTION):
+                    ii = random.randint(0, l)
+                    samples.append(
+                        {"song_sample": "{}{}".format(bird_df.iloc[ii]['song_sample']),
+                         "bird": bird_df.iloc[ii]['bird']})
+
+    res = pd.DataFrame(samples)
+    res = res.sample(frac=1)
+    return res
 
 
 def main():
     # le = LabelEncoder()
     df = pd.read_pickle(OUT_DIR + 'samples_df')
+    df = adjust_data(df)
+    df.head()
     # df['bird'] = df['bird'].map(lambda x: BIRD_CODE[x])
     # df['bird'] = to_categorical(le.fit_transform(np.array(df.bird.tolist())))
     df = df.sample(frac=1)
     print(df.head())
+    count_data = len(df) / BATCH_SIZE
     train, test = train_test_split(df, test_size=0.2, random_state=42, shuffle=True)
-    train_ds = create_dataset(train)
-    val_ds = create_dataset(test)
+    train_ds = create_dataset(train, True)
+    val_ds = create_dataset(test, False)
 
     model = build_model()
     model.summary()
@@ -114,8 +161,8 @@ def main():
                         callbacks=[  # sv,
                             get_lr_callback(BATCH_SIZE), early_stop],
                         validation_data=val_ds,  # class_weight = {0:1,1:2},
+                        steps_per_epoch=count_data,
                         verbose=1,
-                        shuffle=True,
                         batch_size=BATCH_SIZE
                         )
     model.save(OUT_DIR + 'model/' + MODEL_NAME)

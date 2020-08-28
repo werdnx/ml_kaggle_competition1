@@ -144,8 +144,8 @@ def main():
     # df['bird'] = to_categorical(le.fit_transform(np.array(df.bird.tolist())))
     df = df.sample(frac=1)
     print(df.head())
-    count_data = len(df) / BATCH_SIZE
     train, test = train_test_split(df, test_size=0.2, random_state=42, shuffle=True)
+    count_data = len(train) / BATCH_SIZE
     train_ds = create_dataset(train, True)
     val_ds = create_dataset(test, False)
 

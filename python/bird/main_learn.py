@@ -1,25 +1,23 @@
+import random
 import warnings
 
-from tqdm import tqdm
-import numpy as np
+import albumentations as A
+import cv2
 import pandas as pd
 import seaborn as sns
 import tensorflow as tf
 from sklearn.model_selection import train_test_split
-from keras.utils import to_categorical
-from sklearn.preprocessing import LabelEncoder
 from tensorflow.keras.applications import EfficientNetB0
+from tqdm import tqdm
+
 from config import BIRD_CODE
-import cv2
-import albumentations as A
-import random
 
 warnings.filterwarnings('ignore')
 AUTO = tf.data.experimental.AUTOTUNE
 sns.set()
 TRAIN_DIR = '/input/'
-OUT_DIR = '/output/mel/'
-EPOCHS = 10
+OUT_DIR = '/output/'
+EPOCHS = 20
 BATCH_SIZE = 16
 SAMPLES = 512
 SIZE = 224
@@ -44,7 +42,7 @@ def build_model():
     x = base(inp)
     x = tf.keras.layers.GlobalAveragePooling2D()(x)
     # x = tf.keras.layers.Dense(256, use_bias=False)(x)
-    x = tf.layers.BatchNormalization()(x)
+    x = tf.keras.layers.BatchNormalization()(x)
     x = tf.keras.layers.Dropout(0.2, name="top_dropout1")(x)
     # x = tf.keras.layers.Dense(512, activation='relu')(x)
     # x = tf.keras.layers.Dropout(0.2, name="top_dropout2")(x)
@@ -93,45 +91,43 @@ def create_dataset(df, augument):
     return ds
 
 
-def read_labeled_py(rec, rec2):
-    # print('map record')
-    # print(rec)
-    # print(rec2)
-    # exit(1)
-    img = cv2.imread(rec.numpy(), cv2.IMREAD_COLOR)
+def read_labeled_py(rec, rec2, augument):
+    # print('read file from path ' + str(rec.numpy()))
+    img = cv2.imread(rec.numpy().decode("utf-8"))
+    if augument:
+        albus = A.Cutout(max_h_size=int(img.shape[0] * 0.375), max_w_size=int(img.shape[1] * 0.375), num_holes=1, p=0.7)
+        img = albus(image=img)['image']
+
+    img = tf.image.resize(img, [SIZE, SIZE], antialias=True)
     img = tf.cast(img, tf.float32) / 255.0
     return img, tf.one_hot(BIRD_CODE[rec2.numpy().decode("utf-8")], 264)
 
 
 def read_labeled(rec, rec2, augument):
-    img, y = tf.py_function(read_labeled_py, inp=[rec, rec2], Tout=[tf.float32, tf.float32])
-    if augument:
-        albus = A.Cutout(max_h_size=int(img.shape[0] * 0.375), max_w_size=int(img.shape[1] * 0.375), num_holes=1, p=0.7)
-        img = albus(image=img)['image']
-
-    return img, y
+    return tf.py_function(read_labeled_py, inp=[rec, rec2, augument], Tout=[tf.float32, tf.float32])
 
 
 def adjust_data(df):
     df = df.sample(frac=1)
     samples = []
-    with tqdm(total=len(df)) as pbar:
-        for bird in df.bird.unique():
+    b_uniq = df.bird.unique()
+    with tqdm(total=len(b_uniq)) as pbar:
+        for bird in b_uniq:
             pbar.update(1)
             bird_df = df[df['bird'] == bird]
             l = len(bird_df)
             if l > SAMPLES_RESTRICTION:
                 for i in range(0, SAMPLES_RESTRICTION):
                     samples.append(
-                        {"song_sample": "{}{}".format(bird_df.iloc[i]['song_sample']), "bird": bird_df.iloc[i]['bird']})
+                        {"song_sample": "{}".format(bird_df.iloc[i]['song_sample']), "bird": bird_df.iloc[i]['bird']})
             elif l < SAMPLES_RESTRICTION:
                 for i in range(0, l):
                     samples.append(
-                        {"song_sample": "{}{}".format(bird_df.iloc[i]['song_sample']), "bird": bird_df.iloc[i]['bird']})
-                for i in range(SAMPLES_RESTRICTION - l, SAMPLES_RESTRICTION):
-                    ii = random.randint(0, l)
+                        {"song_sample": "{}".format(bird_df.iloc[i]['song_sample']), "bird": bird_df.iloc[i]['bird']})
+                for i in range(l, SAMPLES_RESTRICTION):
+                    ii = random.randint(0, l - 1)
                     samples.append(
-                        {"song_sample": "{}{}".format(bird_df.iloc[ii]['song_sample']),
+                        {"song_sample": "{}".format(bird_df.iloc[ii]['song_sample']),
                          "bird": bird_df.iloc[ii]['bird']})
 
     res = pd.DataFrame(samples)
@@ -141,7 +137,7 @@ def adjust_data(df):
 
 def main():
     # le = LabelEncoder()
-    df = pd.read_pickle(OUT_DIR + 'samples_df')
+    df = pd.read_pickle(OUT_DIR + 'mel_first/samples_df')
     df = adjust_data(df)
     df.head()
     # df['bird'] = df['bird'].map(lambda x: BIRD_CODE[x])
@@ -156,10 +152,11 @@ def main():
     model = build_model()
     model.summary()
     early_stop = tf.keras.callbacks.EarlyStopping(monitor='loss', patience=3)
+    checkpoint = tf.keras.callbacks.ModelCheckpoint(filepath=OUT_DIR + 'model/best_bird_model.h5', monitor='val_loss', save_best_only=True)
     history = model.fit(train_ds,
                         epochs=EPOCHS,
                         callbacks=[  # sv,
-                            get_lr_callback(BATCH_SIZE), early_stop],
+                            get_lr_callback(BATCH_SIZE), early_stop, checkpoint],
                         validation_data=val_ds,  # class_weight = {0:1,1:2},
                         steps_per_epoch=count_data,
                         verbose=1,

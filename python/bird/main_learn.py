@@ -22,7 +22,7 @@ BATCH_SIZE = 16
 SAMPLES = 512
 SIZE = 224
 labels = 264
-MODEL_NAME = 'effnet4_mel_noaug'
+MODEL_NAME = 'effnet4_mel_aug'
 SAMPLES_RESTRICTION = 1000
 
 
@@ -152,7 +152,8 @@ def main():
     model = build_model()
     model.summary()
     early_stop = tf.keras.callbacks.EarlyStopping(monitor='loss', patience=3)
-    checkpoint = tf.keras.callbacks.ModelCheckpoint(filepath=OUT_DIR + 'model/best_bird_model.h5', monitor='val_loss', save_best_only=True)
+    checkpoint = tf.keras.callbacks.ModelCheckpoint(filepath=OUT_DIR + 'model/best_bird_model.h5', monitor='val_loss',
+                                                    save_best_only=True)
     history = model.fit(train_ds,
                         epochs=EPOCHS,
                         callbacks=[  # sv,

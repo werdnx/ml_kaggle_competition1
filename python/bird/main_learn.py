@@ -2,13 +2,17 @@ import random
 import warnings
 
 import albumentations as A
+import librosa
 import cv2
 import pandas as pd
 import seaborn as sns
 import tensorflow as tf
 from sklearn.model_selection import train_test_split
-from tensorflow.keras.applications import EfficientNetB0
+from tensorflow.keras.applications import EfficientNetB2
 from tqdm import tqdm
+from PIL import Image
+import np
+import sklearn as sk
 
 from config import BIRD_CODE
 
@@ -22,8 +26,9 @@ BATCH_SIZE = 16
 SAMPLES = 512
 SIZE = 224
 labels = 264
-MODEL_NAME = 'effnet4_mel_aug'
-SAMPLES_RESTRICTION = 1000
+MODEL_NAME = 'effnet2_mel_wave_aug'
+DF = '/input/sample_slides/samples_df'
+SAMPLES_RESTRICTION = 2000
 
 
 # model.add(effnet_layers)
@@ -34,10 +39,42 @@ SAMPLES_RESTRICTION = 1000
 # model.add(Activation('relu'))
 # model.add(Dropout(dropout_dense_layer))
 
+def add_noise(data, noise_factor=0.05):
+    noise = np.random.randn(len(data))
+    augmented_data = data + noise_factor * noise
+    # Cast back to same data type
+    augmented_data = augmented_data.astype(type(data[0]))
+    return augmented_data
+
+
+def shift(data, sampling_rate, shift_max, shift_direction):
+    shift = np.random.randint(sampling_rate * shift_max)
+    if shift_direction == 'right':
+        shift = -shift
+    elif shift_direction == 'both':
+        direction = np.random.randint(0, 2)
+        if direction == 1:
+            shift = -shift
+    augmented_data = np.roll(data, shift)
+    # Set to silence for heading/ tailing
+    if shift > 0:
+        augmented_data[:shift] = 0
+    else:
+        augmented_data[shift:] = 0
+    return augmented_data
+
+
+def change_pitch(data, sampling_rate, pitch_factor):
+    return librosa.effects.pitch_shift(data, sampling_rate, pitch_factor)
+
+
+def change_speed(data, speed_factor):
+    return librosa.effects.time_stretch(data, speed_factor)
+
 
 def build_model():
     inp = tf.keras.layers.Input(shape=(SIZE, SIZE, 3))
-    base = EfficientNetB0(input_shape=(SIZE, SIZE, 3), weights='imagenet', include_top=False)
+    base = EfficientNetB2(input_shape=(SIZE, SIZE, 3), weights='imagenet', include_top=False)
     # base.trainable = False
     x = base(inp)
     x = tf.keras.layers.GlobalAveragePooling2D()(x)
@@ -93,10 +130,18 @@ def create_dataset(df, augument):
 
 def read_labeled_py(rec, rec2, augument):
     # print('read file from path ' + str(rec.numpy()))
-    img = cv2.imread(rec.numpy().decode("utf-8"))
+    restored = np.load(rec.numpy().decode("utf-8"), allow_pickle=True)
+    wave_data = restored[0][0]
+    wave_rate = restored[0][1]
     if augument:
-        albus = A.Cutout(max_h_size=int(img.shape[0] * 0.375), max_w_size=int(img.shape[1] * 0.375), num_holes=1, p=0.7)
-        img = albus(image=img)['image']
+    # TODO add augmentation
+
+    mel = librosa.feature.melspectrogram(wave_data, n_mels=SAMPLES)
+    db = librosa.power_to_db(mel)
+    normalised_db = sk.preprocessing.minmax_scale(db)
+    db_array = (np.asarray(normalised_db) * 255).astype(np.uint8)
+    db_image = Image.fromarray(np.array([db_array, db_array, db_array]).T)
+    img = np.array(db_image)
 
     img = tf.image.resize(img, [SIZE, SIZE], antialias=True)
     img = tf.cast(img, tf.float32) / 255.0
@@ -137,14 +182,14 @@ def adjust_data(df):
 
 def main():
     # le = LabelEncoder()
-    df = pd.read_pickle(OUT_DIR + 'mel_first/samples_df')
+    df = pd.read_pickle(DF)
     df = adjust_data(df)
     df.head()
     # df['bird'] = df['bird'].map(lambda x: BIRD_CODE[x])
     # df['bird'] = to_categorical(le.fit_transform(np.array(df.bird.tolist())))
     df = df.sample(frac=1)
     print(df.head())
-    train, test = train_test_split(df, test_size=0.2, random_state=42, shuffle=True)
+    train, test = train_test_split(df, test_size=0.3, random_state=42, shuffle=True)
     count_data = len(train) / BATCH_SIZE
     train_ds = create_dataset(train, True)
     val_ds = create_dataset(test, False)

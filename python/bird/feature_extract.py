@@ -38,7 +38,7 @@ def split_waves(audio_file_path, class_label):
             filename = str(uuid4()) + ".npy"
             path = "{}{}".format(OUT_DIR, filename)
             np.save(path, data)
-            samples_from_file.append({"song_sample": path "bird": class_label})
+            samples_from_file.append({"song_sample": path, "bird": class_label})
 
 
 def main():
@@ -57,6 +57,7 @@ def main():
                 audio_file_path = TRAIN_DIR + 'train_audio/'
                 audio_file_path += row.ebird_code
                 class_label = row["ebird_code"]
+                audio_file_path += '/'
                 audio_file_path += row.filename
                 split_waves(audio_file_path, class_label)
             except ZeroDivisionError:

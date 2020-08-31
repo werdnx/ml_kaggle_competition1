@@ -1,18 +1,16 @@
 import random
 import warnings
 
-import albumentations as A
 import librosa
-import cv2
+import np
 import pandas as pd
 import seaborn as sns
-import tensorflow as tf
-from sklearn.model_selection import train_test_split
-from tensorflow.keras.applications import EfficientNetB2
-from tqdm import tqdm
-from PIL import Image
-import np
 import sklearn as sk
+import tensorflow as tf
+from PIL import Image
+from sklearn.model_selection import train_test_split
+from tensorflow.keras.applications import EfficientNetB3
+from tqdm import tqdm
 
 from config import BIRD_CODE
 
@@ -22,11 +20,11 @@ sns.set()
 TRAIN_DIR = '/input/'
 OUT_DIR = '/output/'
 EPOCHS = 20
-BATCH_SIZE = 16
+BATCH_SIZE = 10
 SAMPLES = 512
-SIZE = 224
+SIZE = 300
 labels = 264
-MODEL_NAME = 'effnet2_mel_wave_aug'
+MODEL_NAME = 'effnet3_mel_wave_aug'
 DF = '/input/sample_slides/samples_df'
 SAMPLES_RESTRICTION = 2000
 
@@ -39,48 +37,60 @@ SAMPLES_RESTRICTION = 2000
 # model.add(Activation('relu'))
 # model.add(Dropout(dropout_dense_layer))
 
-def add_noise(data, noise_factor=0.05):
-    noise = np.random.randn(len(data))
-    augmented_data = data + noise_factor * noise
-    # Cast back to same data type
-    augmented_data = augmented_data.astype(type(data[0]))
-    return augmented_data
-
-
-def shift(data, sampling_rate, shift_max, shift_direction):
-    shift = np.random.randint(sampling_rate * shift_max)
-    if shift_direction == 'right':
-        shift = -shift
-    elif shift_direction == 'both':
-        direction = np.random.randint(0, 2)
-        if direction == 1:
-            shift = -shift
-    augmented_data = np.roll(data, shift)
-    # Set to silence for heading/ tailing
-    if shift > 0:
-        augmented_data[:shift] = 0
+def add_noise(data, noise_factor, p):
+    if random.random() < p:
+        noise = np.random.randn(len(data))
+        augmented_data = data + noise_factor * noise
+        # Cast back to same data type
+        augmented_data = augmented_data.astype(type(data[0]))
+        return augmented_data
     else:
-        augmented_data[shift:] = 0
-    return augmented_data
+        return data
 
 
-def change_pitch(data, sampling_rate, pitch_factor):
-    return librosa.effects.pitch_shift(data, sampling_rate, pitch_factor)
+def shift(data, sampling_rate, shift_max, shift_direction, p):
+    if random.random() < p:
+        shift = np.random.randint(sampling_rate * shift_max)
+        if shift_direction == 'right':
+            shift = -shift
+        elif shift_direction == 'both':
+            direction = np.random.randint(0, 2)
+            if direction == 1:
+                shift = -shift
+        augmented_data = np.roll(data, shift)
+        # Set to silence for heading/ tailing
+        if shift > 0:
+            augmented_data[:shift] = 0
+        else:
+            augmented_data[shift:] = 0
+        return augmented_data
+    else:
+        return data
 
 
-def change_speed(data, speed_factor):
-    return librosa.effects.time_stretch(data, speed_factor)
+def change_pitch(data, sampling_rate, pitch_factor, p):
+    if random.random() < p:
+        return librosa.effects.pitch_shift(data, sampling_rate, pitch_factor)
+    else:
+        return data
+
+
+def change_speed(data, speed_factor, p):
+    if random.random() < p:
+        return librosa.effects.time_stretch(data, speed_factor)
+    else:
+        return data
 
 
 def build_model():
     inp = tf.keras.layers.Input(shape=(SIZE, SIZE, 3))
-    base = EfficientNetB2(input_shape=(SIZE, SIZE, 3), weights='imagenet', include_top=False)
+    base = EfficientNetB3(input_shape=(SIZE, SIZE, 3), weights='imagenet', include_top=False)
     # base.trainable = False
     x = base(inp)
     x = tf.keras.layers.GlobalAveragePooling2D()(x)
     # x = tf.keras.layers.Dense(256, use_bias=False)(x)
     x = tf.keras.layers.BatchNormalization()(x)
-    x = tf.keras.layers.Dropout(0.2, name="top_dropout1")(x)
+    x = tf.keras.layers.Dropout(0.25, name="top_dropout1")(x)
     # x = tf.keras.layers.Dense(512, activation='relu')(x)
     # x = tf.keras.layers.Dropout(0.2, name="top_dropout2")(x)
     # x = tf.keras.layers.Dense(256, activation='relu')(x)
@@ -134,7 +144,10 @@ def read_labeled_py(rec, rec2, augument):
     wave_data = restored[0][0]
     wave_rate = restored[0][1]
     if augument:
-    # TODO add augmentation
+        wave_data = add_noise(wave_data, random.uniform(-0.001, 0.001), 0.9)
+        wave_data = shift(wave_data, wave_rate, random.uniform(0.25, 0.5), 'both', 0.8)
+        wave_data = change_pitch(wave_data, wave_rate, random.uniform(0.5, 5), 0.7)
+        wave_data = change_speed(wave_data, random.uniform(0.85, 1.2), 0.6)
 
     mel = librosa.feature.melspectrogram(wave_data, n_mels=SAMPLES)
     db = librosa.power_to_db(mel)

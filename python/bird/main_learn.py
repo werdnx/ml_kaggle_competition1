@@ -2,14 +2,14 @@ import random
 import warnings
 
 import librosa
-import np
+import numpy as np
 import pandas as pd
 import seaborn as sns
 import sklearn as sk
 import tensorflow as tf
 from PIL import Image
 from sklearn.model_selection import train_test_split
-from tensorflow.keras.applications import EfficientNetB3
+from tensorflow.keras.applications import EfficientNetB0
 from tqdm import tqdm
 
 from config import BIRD_CODE
@@ -20,13 +20,13 @@ sns.set()
 TRAIN_DIR = '/input/'
 OUT_DIR = '/output/'
 EPOCHS = 20
-BATCH_SIZE = 10
+BATCH_SIZE = 16
 SAMPLES = 512
-SIZE = 300
+SIZE = 224
 labels = 264
 MODEL_NAME = 'effnet3_mel_wave_aug'
 DF = '/input/sample_slides/samples_df'
-SAMPLES_RESTRICTION = 2000
+SAMPLES_RESTRICTION = 1500
 
 
 # model.add(effnet_layers)
@@ -38,7 +38,7 @@ SAMPLES_RESTRICTION = 2000
 # model.add(Dropout(dropout_dense_layer))
 
 def add_noise(data, noise_factor, p):
-    if random.random() < p:
+    if random.random() <= p:
         noise = np.random.randn(len(data))
         augmented_data = data + noise_factor * noise
         # Cast back to same data type
@@ -49,7 +49,7 @@ def add_noise(data, noise_factor, p):
 
 
 def shift(data, sampling_rate, shift_max, shift_direction, p):
-    if random.random() < p:
+    if random.random() <= p:
         shift = np.random.randint(sampling_rate * shift_max)
         if shift_direction == 'right':
             shift = -shift
@@ -69,14 +69,14 @@ def shift(data, sampling_rate, shift_max, shift_direction, p):
 
 
 def change_pitch(data, sampling_rate, pitch_factor, p):
-    if random.random() < p:
+    if random.random() <= p:
         return librosa.effects.pitch_shift(data, sampling_rate, pitch_factor)
     else:
         return data
 
 
 def change_speed(data, speed_factor, p):
-    if random.random() < p:
+    if random.random() <= p:
         return librosa.effects.time_stretch(data, speed_factor)
     else:
         return data
@@ -84,7 +84,7 @@ def change_speed(data, speed_factor, p):
 
 def build_model():
     inp = tf.keras.layers.Input(shape=(SIZE, SIZE, 3))
-    base = EfficientNetB3(input_shape=(SIZE, SIZE, 3), weights='imagenet', include_top=False)
+    base = EfficientNetB0(input_shape=(SIZE, SIZE, 3), weights='imagenet', include_top=False)
     # base.trainable = False
     x = base(inp)
     x = tf.keras.layers.GlobalAveragePooling2D()(x)

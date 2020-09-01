@@ -2,6 +2,7 @@ import random
 import warnings
 
 import librosa
+import keras
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -19,15 +20,16 @@ AUTO = tf.data.experimental.AUTOTUNE
 sns.set()
 TRAIN_DIR = '/input/'
 OUT_DIR = '/output/'
-EPOCHS = 20
-BATCH_SIZE = 16
-SAMPLES = 512
-SIZE = 224
+EPOCHS = 100
+BATCH_SIZE = 32
+EARLY_STOP_PATIENCE=10
+# SAMPLES = 512
+# SIZE = 224
 labels = 264
-MODEL_NAME = 'effnet3_mel_wave_aug'
+MODEL_NAME = 'conv1d_fft_model_v1'
 DF = '/input/sample_slides/samples_df'
-SAMPLES_RESTRICTION = 1500
-SAMPLE_RATE = 22050
+SAMPLES_RESTRICTION = 2000
+SAMPLING_RATE = 22050
 
 
 # model.add(effnet_layers)
@@ -83,28 +85,65 @@ def change_speed(data, speed_factor, p):
         return data
 
 
-def build_model():
-    inp = tf.keras.layers.Input(shape=(SIZE, SIZE, 3))
-    base = EfficientNetB0(input_shape=(SIZE, SIZE, 3), weights='imagenet', include_top=False)
-    # base.trainable = False
-    x = base(inp)
-    x = tf.keras.layers.GlobalAveragePooling2D()(x)
-    # x = tf.keras.layers.Dense(256, use_bias=False)(x)
-    x = tf.keras.layers.BatchNormalization()(x)
-    x = tf.keras.layers.Dropout(0.25, name="top_dropout1")(x)
-    # x = tf.keras.layers.Dense(512, activation='relu')(x)
-    # x = tf.keras.layers.Dropout(0.2, name="top_dropout2")(x)
-    # x = tf.keras.layers.Dense(256, activation='relu')(x)
-    # x = tf.keras.layers.Dropout(0.2, name="top_dropout3")(x)
-    # x = tf.keras.layers.Dense(128, activation='relu')(x)
-    # x = tf.keras.layers.Dropout(0.2, name="top_dropout4")(x)
-    # x = tf.keras.layers.Dense(64, activation='relu')(x)
-    # Compile the model
-    x = tf.keras.layers.Dense(labels, activation='softmax')(x)
-    model = tf.keras.Model(inputs=inp, outputs=x)
+def residual_block(x, filters, conv_num=3, activation="relu"):
+    # Shortcut
+    s = keras.layers.Conv1D(filters, 1, padding="same")(x)
+    for i in range(conv_num - 1):
+        x = keras.layers.Conv1D(filters, 3, padding="same")(x)
+        x = keras.layers.Activation(activation)(x)
+    x = keras.layers.Conv1D(filters, 3, padding="same")(x)
+    x = keras.layers.Add()([x, s])
+    x = keras.layers.Activation(activation)(x)
+    return keras.layers.MaxPool1D(pool_size=2, strides=2)(x)
+
+
+def build_model(input_shape, num_classes):
+    inputs = keras.layers.Input(shape=input_shape, name="input")
+
+    x = residual_block(inputs, 16, 2)
+    x = residual_block(x, 32, 2)
+    x = residual_block(x, 64, 3)
+    x = residual_block(x, 128, 3)
+    x = residual_block(x, 128, 3)
+
+    x = keras.layers.AveragePooling1D(pool_size=3, strides=3)(x)
+    x = keras.layers.Flatten()(x)
+    x = keras.layers.Dense(256, activation="relu")(x)
+    x = keras.layers.Dense(128, activation="relu")(x)
+
+    outputs = keras.layers.Dense(num_classes, activation="softmax", name="output")(x)
+
+    model = keras.models.Model(inputs=inputs, outputs=outputs)
+
     opt = tf.keras.optimizers.Adam(learning_rate=0.001)
-    model.compile(loss='categorical_crossentropy', metrics=['AUC'], optimizer=opt)
+    # metrics=['AUC']
+    model.compile(loss='categorical_crossentropy', metrics=['accuracy'], optimizer=opt)
     return model
+
+
+#
+# def build_model():
+#     inp = tf.keras.layers.Input(shape=(SIZE, SIZE, 3))
+#     base = EfficientNetB0(input_shape=(SIZE, SIZE, 3), weights='imagenet', include_top=False)
+#     # base.trainable = False
+#     x = base(inp)
+#     x = tf.keras.layers.GlobalAveragePooling2D()(x)
+#     # x = tf.keras.layers.Dense(256, use_bias=False)(x)
+#     x = tf.keras.layers.BatchNormalization()(x)
+#     x = tf.keras.layers.Dropout(0.25, name="top_dropout1")(x)
+#     # x = tf.keras.layers.Dense(512, activation='relu')(x)
+#     # x = tf.keras.layers.Dropout(0.2, name="top_dropout2")(x)
+#     # x = tf.keras.layers.Dense(256, activation='relu')(x)
+#     # x = tf.keras.layers.Dropout(0.2, name="top_dropout3")(x)
+#     # x = tf.keras.layers.Dense(128, activation='relu')(x)
+#     # x = tf.keras.layers.Dropout(0.2, name="top_dropout4")(x)
+#     # x = tf.keras.layers.Dense(64, activation='relu')(x)
+#     # Compile the model
+#     x = tf.keras.layers.Dense(labels, activation='softmax')(x)
+#     model = tf.keras.Model(inputs=inp, outputs=x)
+#     opt = tf.keras.optimizers.Adam(learning_rate=0.001)
+#     model.compile(loss='categorical_crossentropy', metrics=['AUC'], optimizer=opt)
+#     return model
 
 
 def get_lr_callback(batch_size=8):
@@ -139,6 +178,21 @@ def create_dataset(df, augument):
     return ds
 
 
+def audio_to_fft(audio):
+    # Since tf.signal.fft applies FFT on the innermost dimension,
+    # we need to squeeze the dimensions and then expand them again
+    # after FFT
+    audio = tf.squeeze(audio, axis=-1)
+    fft = tf.signal.fft(
+        tf.cast(tf.complex(real=audio, imag=tf.zeros_like(audio)), tf.complex64)
+    )
+    fft = tf.expand_dims(fft, axis=-1)
+
+    # Return the absolute value of the first half of the FFT
+    # which represents the positive frequencies
+    return tf.math.abs(fft[:, : (audio.shape[1] // 2), :])
+
+
 def read_labeled_py(rec, rec2, augument):
     # print('read file from path ' + str(rec.numpy()))
     restored = np.load(rec.numpy().decode("utf-8"), allow_pickle=True)
@@ -150,16 +204,8 @@ def read_labeled_py(rec, rec2, augument):
         wave_data = change_pitch(wave_data, wave_rate, random.uniform(0.5, 5), 0.7)
         wave_data = change_speed(wave_data, random.uniform(0.85, 1.2), 0.6)
 
-    mel = librosa.feature.melspectrogram(wave_data, n_mels=SAMPLES)
-    db = librosa.power_to_db(mel)
-    normalised_db = sk.preprocessing.minmax_scale(db)
-    db_array = (np.asarray(normalised_db) * 255).astype(np.uint8)
-    db_image = Image.fromarray(np.array([db_array, db_array, db_array]).T)
-    img = np.array(db_image)
-
-    img = tf.image.resize(img, [SIZE, SIZE], antialias=True)
-    img = tf.cast(img, tf.float32) / 255.0
-    return img, tf.one_hot(BIRD_CODE[rec2.numpy().decode("utf-8")], 264)
+    data = audio_to_fft(wave_data)
+    return data, tf.one_hot(BIRD_CODE[rec2.numpy().decode("utf-8")], labels)
 
 
 def read_labeled(rec, rec2, augument):
@@ -208,10 +254,10 @@ def main():
     train_ds = create_dataset(train, True)
     val_ds = create_dataset(test, False)
 
-    model = build_model()
+    model = build_model((SAMPLING_RATE // 2, 1), labels)
     model.summary()
-    early_stop = tf.keras.callbacks.EarlyStopping(monitor='loss', patience=3)
-    checkpoint = tf.keras.callbacks.ModelCheckpoint(filepath=OUT_DIR + 'model/best_bird_model.h5', monitor='val_loss',
+    early_stop = tf.keras.callbacks.EarlyStopping(monitor='loss', patience=EARLY_STOP_PATIENCE)
+    checkpoint = tf.keras.callbacks.ModelCheckpoint(filepath=OUT_DIR + 'model/best_bird_fft_model.h5', monitor='val_loss',
                                                     save_best_only=True)
     history = model.fit(train_ds,
                         epochs=EPOCHS,

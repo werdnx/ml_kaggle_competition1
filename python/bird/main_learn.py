@@ -27,6 +27,7 @@ labels = 264
 MODEL_NAME = 'effnet3_mel_wave_aug'
 DF = '/input/sample_slides/samples_df'
 SAMPLES_RESTRICTION = 2000
+SAMPLE_RATE = 22050
 
 
 # model.add(effnet_layers)

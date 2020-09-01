@@ -1,4 +1,7 @@
-several birds preds?
+https://keras.io/examples/audio/speaker_recognition_using_cnn/
+wave->aug->fft
+
+\several birds preds?
 
 split by 5 secs
 extract mfcc -> denoise(https://www.kaggle.com/mauriciofigueiredo/intro-to-filtering-process-model-submitting)

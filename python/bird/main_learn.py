@@ -22,7 +22,7 @@ TRAIN_DIR = '/input/'
 OUT_DIR = '/output/'
 EPOCHS = 100
 BATCH_SIZE = 32
-EARLY_STOP_PATIENCE=10
+EARLY_STOP_PATIENCE = 10
 # SAMPLES = 512
 # SIZE = 224
 labels = 264
@@ -179,18 +179,10 @@ def create_dataset(df, augument):
 
 
 def audio_to_fft(audio):
-    # Since tf.signal.fft applies FFT on the innermost dimension,
-    # we need to squeeze the dimensions and then expand them again
-    # after FFT
-    audio = tf.squeeze(audio, axis=-1)
     fft = tf.signal.fft(
         tf.cast(tf.complex(real=audio, imag=tf.zeros_like(audio)), tf.complex64)
     )
-    fft = tf.expand_dims(fft, axis=-1)
-
-    # Return the absolute value of the first half of the FFT
-    # which represents the positive frequencies
-    return tf.math.abs(fft[:, : (audio.shape[1] // 2), :])
+    return tf.math.abs(fft[: (audio.shape[0] // 2), :])
 
 
 def read_labeled_py(rec, rec2, augument):
@@ -204,6 +196,7 @@ def read_labeled_py(rec, rec2, augument):
         wave_data = change_pitch(wave_data, wave_rate, random.uniform(0.5, 5), 0.7)
         wave_data = change_speed(wave_data, random.uniform(0.85, 1.2), 0.6)
 
+    wave_data = tf.reshape(wave_data, [wave_data.shape[0], 1])
     data = audio_to_fft(wave_data)
     return data, tf.one_hot(BIRD_CODE[rec2.numpy().decode("utf-8")], labels)
 
@@ -257,7 +250,8 @@ def main():
     model = build_model((SAMPLING_RATE // 2, 1), labels)
     model.summary()
     early_stop = tf.keras.callbacks.EarlyStopping(monitor='loss', patience=EARLY_STOP_PATIENCE)
-    checkpoint = tf.keras.callbacks.ModelCheckpoint(filepath=OUT_DIR + 'model/best_bird_fft_model.h5', monitor='val_loss',
+    checkpoint = tf.keras.callbacks.ModelCheckpoint(filepath=OUT_DIR + 'model/best_bird_fft_model.h5',
+                                                    monitor='val_loss',
                                                     save_best_only=True)
     history = model.fit(train_ds,
                         epochs=EPOCHS,

@@ -1,16 +1,13 @@
 import random
 import warnings
 
-import librosa
 import keras
+import librosa
 import numpy as np
 import pandas as pd
 import seaborn as sns
-import sklearn as sk
 import tensorflow as tf
-from PIL import Image
 from sklearn.model_selection import train_test_split
-from tensorflow.keras.applications import EfficientNetB0
 from tqdm import tqdm
 
 from config import BIRD_CODE
@@ -20,16 +17,20 @@ AUTO = tf.data.experimental.AUTOTUNE
 sns.set()
 TRAIN_DIR = '/input/'
 OUT_DIR = '/output/'
-EPOCHS = 100
+CACHE = '/home/werdn/input/bird/cache/ds'
+EPOCHS = 20
 BATCH_SIZE = 32
+PREFETCH = 100
 EARLY_STOP_PATIENCE = 10
 # SAMPLES = 512
 # SIZE = 224
 labels = 264
 MODEL_NAME = 'conv1d_fft_model_v1'
 DF = '/input/sample_slides/samples_df'
-SAMPLES_RESTRICTION = 2000
+SAMPLES_RESTRICTION = 1500
 SAMPLING_RATE = 22050
+# 5 sec
+SAMPLE_LEN = 5
 
 
 # model.add(effnet_layers)
@@ -117,7 +118,8 @@ def build_model(input_shape, num_classes):
 
     opt = tf.keras.optimizers.Adam(learning_rate=0.001)
     # metrics=['AUC']
-    model.compile(loss='categorical_crossentropy', metrics=['accuracy'], optimizer=opt)
+    # metrics=['accuracy']
+    model.compile(loss='categorical_crossentropy', metrics=['AUC'], optimizer=opt)
     return model
 
 
@@ -170,11 +172,13 @@ def get_lr_callback(batch_size=8):
 def create_dataset(df, augument):
     print('create ds from elements ' + str(len(df)))
     ds = tf.data.Dataset.from_tensor_slices((df['song_sample'].values, df['bird'].values))
-    ds = ds.map(lambda rec1, rec2: read_labeled(rec1, rec2, augument), num_parallel_calls=AUTO)
+    ds.cache(CACHE)
     if augument:
         ds = ds.repeat()
 
-    ds = ds.batch(BATCH_SIZE, drop_remainder=True)
+    ds = ds.map(lambda rec1, rec2: read_labeled(rec1, rec2, augument), num_parallel_calls=AUTO)
+    ds = ds.batch(BATCH_SIZE, drop_remainder=False)
+    ds = ds.prefetch(PREFETCH)
     return ds
 
 
@@ -194,9 +198,9 @@ def read_labeled_py(rec, rec2, augument):
         wave_data = add_noise(wave_data, random.uniform(-0.001, 0.001), 0.9)
         wave_data = shift(wave_data, wave_rate, random.uniform(0.25, 0.5), 'both', 0.8)
         wave_data = change_pitch(wave_data, wave_rate, random.uniform(0.5, 5), 0.7)
-        wave_data = change_speed(wave_data, random.uniform(0.85, 1.2), 0.6)
+        # wave_data = change_speed(wave_data, random.uniform(0.85, 1.2), 0.6)
 
-    wave_data = tf.reshape(wave_data, [wave_data.shape[0], 1])
+    wave_data = tf.reshape(wave_data, [SAMPLING_RATE * SAMPLE_LEN, 1])
     data = audio_to_fft(wave_data)
     return data, tf.one_hot(BIRD_CODE[rec2.numpy().decode("utf-8")], labels)
 
@@ -247,7 +251,7 @@ def main():
     train_ds = create_dataset(train, True)
     val_ds = create_dataset(test, False)
 
-    model = build_model((SAMPLING_RATE // 2, 1), labels)
+    model = build_model(((SAMPLING_RATE * SAMPLE_LEN) // 2, 1), labels)
     model.summary()
     early_stop = tf.keras.callbacks.EarlyStopping(monitor='loss', patience=EARLY_STOP_PATIENCE)
     checkpoint = tf.keras.callbacks.ModelCheckpoint(filepath=OUT_DIR + 'model/best_bird_fft_model.h5',
@@ -260,7 +264,7 @@ def main():
                         validation_data=val_ds,  # class_weight = {0:1,1:2},
                         steps_per_epoch=count_data,
                         verbose=1,
-                        batch_size=BATCH_SIZE
+                        # batch_size=BATCH_SIZE
                         )
     model.save(OUT_DIR + 'model/' + MODEL_NAME)
 

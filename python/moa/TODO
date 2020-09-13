@@ -1,2 +1,4 @@
 206 models
 add SMOTE for each binary class
+MLSMOTE https://medium.com/thecyphy/handling-data-imbalance-in-multi-label-classification-mlsmote-531155416b87
+https://github.com/niteshsukhwani/MLSMOTE/blob/master/mlsmote.py

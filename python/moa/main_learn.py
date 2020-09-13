@@ -4,7 +4,8 @@ from collections import Counter
 import category_encoders as ce
 import numpy as np  # linear algebra
 import pandas as pd  # data processing, CSV file I/O (e.g. pd.read_csv)
-from imblearn.over_sampling import SVMSMOTE
+from category_encoders import CountEncoder
+from imblearn.over_sampling import ADASYN
 # from sklearn.pipeline import Pipeline
 from imblearn.pipeline import Pipeline
 from sklearn.metrics import log_loss
@@ -27,26 +28,11 @@ def init_models(y_len):
         models[model_id] = create_model()
     return models
 
-def create_def_model():
-    m = Pipeline([('encode', ce.CountEncoder(cols=[0, 2])),
-                  ('classify', XGBClassifier(tree_method='gpu_hist'))
-                  ])
-    params = {'classify__estimator__colsample_bytree': 0.6522,
-              'classify__estimator__gamma': 3.6975,
-              'classify__estimator__learning_rate': 0.0503,
-              'classify__estimator__max_delta_step': 2.0706,
-              'classify__estimator__max_depth': 10,
-              'classify__estimator__min_child_weight': 31.5800,
-              'classify__estimator__n_estimators': 166,
-              'classify__estimator__subsample': 0.8639
-              }
-    m.set_params(**params)
-    return m
-
 
 def create_model():
-    m = Pipeline([('encode', ce.CountEncoder(cols=[0, 2])),
-                  ('sampling', SVMSMOTE()),
+    m = Pipeline([
+        # ('encode', ce.CountEncoder(cols=[0, 2])),
+                  # ('sampling', ADASYN()),
                   ('classify', XGBClassifier(tree_method='gpu_hist'))
                   ])
     params = {'classify__estimator__colsample_bytree': 0.6522,
@@ -98,24 +84,29 @@ def main():
             print('Starting model: ', str(model_id))
             X_train, X_val = X[trn_idx], X[val_idx]
             y_train, y_val = y[trn_idx][:, model_id], y[val_idx][:, model_id]
-            if findEx(y_train) < 6 or findEx(y_val) < 6:
-                print('skip empty model_id ' + str(model_id))
-            else:
-                print('y_train' + str(Counter(y_train)))
-                print('y_val' + str(Counter(y_val)))
-                try:
-                    model = create_model()
-                    model.fit(X_train, y_train)
-                except ValueError:
-                    model = create_def_model()
-                    model.fit(X_train, y_train)
-                val_preds_cur = model.predict_proba(X_val)
-                val_preds_cur = np.array(val_preds_cur)[:, 1].T
-                oof_preds[val_idx][:, model_id] = val_preds_cur
+            y_counter = Counter(y_train)
+            print('y_train' + str(y_counter))
+            print('y_val' + str(Counter(y_val)))
 
-                preds_cur = model.predict_proba(X_test)
-                preds_cur = np.array(preds_cur)[:, 1].T
-                test_preds[:, model_id] += preds_cur / NFOLDS
+            enc = CountEncoder(cols=[0, 2])
+            X_train = enc.fit_transform(X_train)
+            X_val = enc.fit_transform(X_val)
+            X_test = enc.fit_transform(X_test)
+
+            if y_counter[1] < 6:
+                print('using def model for id ' + str(model_id))
+            else:
+                mote = ADASYN()
+                X_train, y_train = mote.fit_resample(X_train, y_train)
+
+            models[model_id].fit(X_train, y_train)
+            val_preds_cur = models[model_id].predict_proba(X_val)
+            val_preds_cur = np.array(val_preds_cur)[:, 1].T
+            oof_preds[val_idx][:, model_id] = val_preds_cur
+
+            preds_cur = models[model_id].predict_proba(X_test)
+            preds_cur = np.array(preds_cur)[:, 1].T
+            test_preds[:, model_id] += preds_cur / NFOLDS
 
     print('OOF log loss: ', log_loss(np.ravel(y), np.ravel(oof_preds)))
     # set control test preds to 0

@@ -18,4 +18,4 @@ RUN pip install patsy
 RUN pip install statsmodels
 RUN pip install git+https://github.com/scikit-learn-contrib/categorical-encoding.git
 
-CMD ["python","-u","main_learn.py"]
+CMD ["python","-u","netwok_learn.py"]

@@ -5,11 +5,14 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 from sklearn.model_selection import KFold
-from tensorflow.keras.callbacks import ReduceLROnPlateau
 from sklearn.preprocessing import StandardScaler
+from tensorflow.keras.callbacks import ReduceLROnPlateau
 
-EPOCHS = 100
-BATCH_SIZE = 2048
+# EPOCHS = 100
+# BATCH_SIZE = 2048
+BATCH_SIZE = 128
+EPOCHS = 35
+
 
 def seed_everything(seed=2020):
     random.seed(seed)
@@ -17,7 +20,9 @@ def seed_everything(seed=2020):
     np.random.seed(seed)
     tf.random.set_seed(seed)
 
+
 seed_everything(42)
+
 
 def model():
     METRICS = [
@@ -43,7 +48,7 @@ def model():
     ])
 
     model.compile(optimizer=tf.keras.optimizers.Adam(lr=2.75e-5), loss='binary_crossentropy',
-                  metrics=METRICS)
+                  metrics=["accuracy", "AUC"])
     return model
 
 
@@ -108,14 +113,12 @@ def main():
         print("predict test...")
         pe += net.predict(test_features, batch_size=BATCH_SIZE, verbose=0) / NFOLD
 
-
     columns = pd.read_csv('../input/train_targets_scored.csv')
     del columns['sig_id']
     sub = pd.DataFrame(data=pe, columns=columns.columns)
     sample = pd.read_csv('../input/sample_submission.csv')
     sub.insert(0, column='sig_id', value=sample['sig_id'])
-    sub.to_csv('/output/submission_NN_5_fold.csv', index=False)
-
+    sub.to_csv('/output/submission_NN_5_fold_v2.csv', index=False)
 
 
 if __name__ == "__main__":

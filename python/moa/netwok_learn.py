@@ -48,7 +48,7 @@ def model():
     ])
 
     model.compile(optimizer=tf.keras.optimizers.Adam(lr=2.75e-5), loss='binary_crossentropy',
-                  metrics=["accuracy", "AUC"])
+                  metrics=METRICS)
     return model
 
 
@@ -118,7 +118,7 @@ def main():
     sub = pd.DataFrame(data=pe, columns=columns.columns)
     sample = pd.read_csv('../input/sample_submission.csv')
     sub.insert(0, column='sig_id', value=sample['sig_id'])
-    sub.to_csv('/output/submission_NN_5_fold_v2.csv', index=False)
+    sub.to_csv('/output/submission_NN_5_fold_v4.csv', index=False)
 
 
 if __name__ == "__main__":

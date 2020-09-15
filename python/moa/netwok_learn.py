@@ -11,7 +11,7 @@ from tensorflow.keras.callbacks import ReduceLROnPlateau
 # EPOCHS = 100
 # BATCH_SIZE = 2048
 BATCH_SIZE = 128
-EPOCHS = 35
+EPOCHS = 100
 
 
 def seed_everything(seed=2020):

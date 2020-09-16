@@ -17,5 +17,6 @@ RUN apt-get update && \
 RUN pip install patsy
 RUN pip install statsmodels
 RUN pip install git+https://github.com/scikit-learn-contrib/categorical-encoding.git
+RUN pip install tensorflow-addons
 
-CMD ["python","-u","netwok_learn.py"]
+CMD ["python","-u","netwok_learn2.py"]

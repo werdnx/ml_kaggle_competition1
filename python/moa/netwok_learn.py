@@ -13,6 +13,7 @@ from tensorflow.keras.callbacks import ReduceLROnPlateau
 BATCH_SIZE = 128
 EPOCHS = 100
 
+# {'dropout_rate': 0.4206650042019096, 'hidden_unit_1': 3, 'hidden_unit_2': 0, 'hidden_unit_3': 4}
 
 def seed_everything(seed=2020):
     random.seed(seed)

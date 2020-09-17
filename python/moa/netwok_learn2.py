@@ -91,7 +91,7 @@ def create_model(num_columns, hidden_units, dropout_rate):
 
     out = tfa.layers.WeightNormalization(tf.keras.layers.Dense(206, activation='sigmoid'))(x)
     model = tf.keras.models.Model(inputs=inp, outputs=out)
-    model.compile(optimizer=tfa.optimizers.Lookahead(tf.optimizers.Adam(1e-3)), loss='binary_crossentropy')
+    model.compile(optimizer=tfa.optimizers.Lookahead(tf.optimizers.Adam(1e-5)), loss='binary_crossentropy')
     return model
 
 
@@ -182,7 +182,7 @@ def main():
     sub = pd.DataFrame(data=result, columns=columns.columns)
     sample = pd.read_csv('../input/sample_submission.csv')
     sub.insert(0, column='sig_id', value=sample['sig_id'])
-    sub.to_csv('/output/submission_net2_v1.csv', index=False)
+    sub.to_csv('/output/submission_net2_v2.csv', index=False)
 
 
 # Add scaler ?

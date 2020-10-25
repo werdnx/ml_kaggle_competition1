@@ -116,7 +116,7 @@ def fold_iteration(files_train, files_valid, model, target_size_, epoch, fold):
                           batch_size=BATCH_SIZE)
     validation_data = get_dataset(files_valid, augment=False, shuffle=False, repeat=False,
                                   dim=target_size_)
-    count_data = count_data_items(files_train) / BATCH_SIZE
+    count_data = count_data_items(files_tr  ain) / BATCH_SIZE
     history = model.fit(dataset,
                         epochs=1,
                         callbacks=[  # sv,

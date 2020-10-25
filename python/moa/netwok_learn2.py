@@ -15,6 +15,11 @@ BATCH_SIZE = 128
 EPOCHS = 100
 NFOLD = 5
 
+#adam04
+# {'dropout_rate': 0.25407056565585273, 'hidden_unit_1': 2, 'hidden_unit_2': 1, 'hidden_unit_3': 4}
+# adam05
+# {'dropout_rate': 0.41899471284989165, 'hidden_unit_1': 3, 'hidden_unit_2': 0, 'hidden_unit_3': 4}
+
 top_feats = [0, 1, 2, 3, 5, 6, 8, 9, 10, 11, 12, 14, 15,
              16, 18, 19, 20, 21, 23, 24, 25, 27, 28, 29, 30, 31,
              32, 33, 34, 35, 36, 37, 39, 40, 41, 42, 44, 45, 46,
@@ -91,7 +96,7 @@ def create_model(num_columns, hidden_units, dropout_rate):
 
     out = tfa.layers.WeightNormalization(tf.keras.layers.Dense(206, activation='sigmoid'))(x)
     model = tf.keras.models.Model(inputs=inp, outputs=out)
-    model.compile(optimizer=tfa.optimizers.Lookahead(tf.optimizers.Adam(1e-5)), loss='binary_crossentropy')
+    model.compile(optimizer=tfa.optimizers.Lookahead(tf.optimizers.Adam(1e-4)), loss='binary_crossentropy')
     return model
 
 
@@ -175,14 +180,16 @@ def main():
 
     del train_targets['sig_id']
     train.head()
-    params = {'dropout_rate': 0.4206650042019096, 'hidden_unit_1': 1024, 'hidden_unit_2': 6144, 'hidden_unit_3': 0}
+    # params = {'dropout_rate': 0.4206650042019096, 'hidden_unit_1': 1024, 'hidden_unit_2': 6144, 'hidden_unit_3': 0}
+    # params = {'dropout_rate': 0.25407056565585273, 'hidden_unit_1': 2048, 'hidden_unit_2': 4096, 'hidden_unit_3': 0}
+    params = {'dropout_rate': 0.41899471284989165, 'hidden_unit_1': 1024, 'hidden_unit_2': 6144, 'hidden_unit_3': 0}
     result = evaluate(params, train_targets, train, test)
     columns = pd.read_csv('../input/train_targets_scored.csv')
     del columns['sig_id']
     sub = pd.DataFrame(data=result, columns=columns.columns)
     sample = pd.read_csv('../input/sample_submission.csv')
     sub.insert(0, column='sig_id', value=sample['sig_id'])
-    sub.to_csv('/output/submission_net2_v2.csv', index=False)
+    sub.to_csv('/output/submission_net2_adam05_v5.csv', index=False)
 
 
 # Add scaler ?

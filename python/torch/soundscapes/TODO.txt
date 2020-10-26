@@ -1,0 +1,25 @@
+Running the sample
+Build the container from within the /code folder by docker build -t docker-template .
+
+Note that the build process makes sure that the Java files get compiled.
+
+Launch the container with docker run -it docker-template
+
+Verify that testing works out of the box. Within the container, run ./test.sh ./data/testing.txt ./data/solution.csv
+
+This should create a solution.csv file within the /data folder. This should be identical that is already present in the submission's /solution folder.
+
+Verify that training works: ./train.sh ./data/training.txt
+
+This should overwrite the ./model/dummy-model.txt file, so subsequent testing will use the new model instead of the one shipped with the submission.
+
+
+
+
+######Remote run########
+copy code folder to dest +
+copy solution folder to dest +
+run remote docker build -t soundscapes . +
+docker run +
+./train.sh /data/train/
+./test.sh /data/test/ /wdata/solution.csv

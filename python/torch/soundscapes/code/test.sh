@@ -8,7 +8,7 @@ if [ "$3" = "1" ]; then
 else
   echo "do convertation"
   cd "$1"
-  mkdir /wdata/train
+  mkdir /wdata/test
   bash "${cur_dir}/cnv.sh" /wdata/test
   cd "$cur_dir"
 fi

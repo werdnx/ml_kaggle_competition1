@@ -19,5 +19,6 @@ This should overwrite the ./model/dummy-model.txt file, so subsequent testing wi
 ######Remote run########
 ffmpeg from data to wdata using bash
 handle separators
-./train.sh /data/train/
-./test.sh /data/test/ /wdata/solution.csv
+#1-MEANS SKIP CONVERTATION
+./train.sh /data/train/ 1
+./test.sh /data/test/ /wdata/solution.csv 1

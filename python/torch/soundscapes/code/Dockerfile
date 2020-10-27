@@ -15,5 +15,5 @@ WORKDIR /work
 # Again, test and train scripts should be executable within the container.
 RUN chmod +x test.sh
 RUN chmod +x train.sh
-
+RUN chmod +x cnv.sh
 # Don't add any CMD or ENTRYPOINT!

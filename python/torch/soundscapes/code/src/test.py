@@ -9,8 +9,8 @@ def test(data_folder, submission_path):
     result = []
     for file in files_to_predict:
         result.append(
-            {"id": "{}".format(file[1].split(".")[0]), "A": 0.5, "B": 0.5, "C": 0.5, "D": 0.5, "E": 0.5, "F": 0.5,
-             "G": 0.5, "H": 0.5, "I": 0.5})
+            {"id": "{}".format(file[1].split(".")[0]), "A": 0.1, "B": 0.1, "C": 0.1, "D": 0.1, "E": 0.1, "F": 0.1,
+             "G": 0.1, "H": 0.1, "I": 0.1})
     result_df = pd.DataFrame(result)
     result_df.to_csv(submission_path, header=True, index=False)
 

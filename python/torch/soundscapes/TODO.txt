@@ -17,9 +17,7 @@ This should overwrite the ./model/dummy-model.txt file, so subsequent testing wi
 
 
 ######Remote run########
-copy code folder to dest +
-copy solution folder to dest +
-run remote docker build -t soundscapes . +
-docker run +
+ffmpeg from data to wdata using bash
+handle separators
 ./train.sh /data/train/
 ./test.sh /data/test/ /wdata/solution.csv

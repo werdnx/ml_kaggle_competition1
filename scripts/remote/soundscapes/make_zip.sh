@@ -1,0 +1,2 @@
+#zip -r -X /Users/dmitrenkoandrey/PycharmProjects/ml_kaggle_competition1/python/torch/soundscapes/submission.zip /Users/dmitrenkoandrey/PycharmProjects/ml_kaggle_competition1/python/torch/soundscapes/code /Users/dmitrenkoandrey/PycharmProjects/ml_kaggle_competition1/python/torch/soundscapes/solution
+(cd /Users/dmitrenkoandrey/PycharmProjects/ml_kaggle_competition1/python/torch/soundscapes && zip -r -X submission.zip code solution)

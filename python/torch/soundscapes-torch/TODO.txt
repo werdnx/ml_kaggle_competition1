@@ -1,0 +1,32 @@
+Running the sample
+Build the container from within the /code folder by docker build -t docker-template .
+
+Note that the build process makes sure that the Java files get compiled.
+
+Launch the container with docker run -it docker-template
+
+Verify that testing works out of the box. Within the container, run ./test.sh ./data/testing.txt ./data/solution.csv
+
+This should create a solution.csv file within the /data folder. This should be identical that is already present in the submission's /solution folder.
+
+Verify that training works: ./train.sh ./data/training.txt
+
+This should overwrite the ./model/dummy-model.txt file, so subsequent testing will use the new model instead of the one shipped with the submission.
+
+
+
+
+######Remote run########
+ffmpeg from data to wdata using bash +
+handle separators
+#1-MEANS SKIP CONVERTATION
+./train.sh /data/train/ 1
+./test.sh /data/test/ /wdata/solution.csv 1
+
+1. 5 sec learn estimate +
+2. 5-fold 5 sec learn -
+2.1. Remove speech
+3. Add data balance from audio slices
+4. Extract speech
+5. Model for each class?
+6. Model from kaggle?

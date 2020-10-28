@@ -44,7 +44,7 @@ def doTrain(model, loss_fn, train_loader, valid_loader, epochs, optimizer, train
         for i, data in enumerate(train_loader):
             x, y = data
             optimizer.zero_grad()
-            x = x.to(device, dtype=torch.float32)
+            x = x.to(device, dtype=torch.float16)
             y = y.to(device, dtype=torch.long)
             y_hat = model(x)
             loss = loss_fn(y_hat, y)
@@ -75,19 +75,20 @@ def doTrain(model, loss_fn, train_loader, valid_loader, epochs, optimizer, train
 
 def train(data_folder):
     df = pd.read_csv(os.path.join(data_folder, 'train_ground_truth.csv'), dtype={0: str, 1: str})
-    msk = np.random.rand(len(df)) < 0.8
+    msk = np.random.rand(len(df)) < 0.7
     train_df = df[msk]
     valid_df = df[~msk]
     train_data = ESC50Data(TRAIN_PATH, train_df, 0, 1)
     valid_data = ESC50Data(TRAIN_PATH, valid_df, 0, 1)
-    train_loader = DataLoader(train_data, batch_size=16, shuffle=True)
-    valid_loader = DataLoader(valid_data, batch_size=16, shuffle=True)
+    train_loader = DataLoader(train_data, batch_size=32, shuffle=True)
+    valid_loader = DataLoader(valid_data, batch_size=32, shuffle=True)
     resnet_model = resnet34(pretrained=True)
-    resnet_model.fc = nn.Linear(512, 50)
+    #9 - num classes
+    resnet_model.fc = nn.Linear(512, 9)
     resnet_model.conv1 = nn.Conv2d(1, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
     resnet_model = resnet_model.to(device)
     optimizer = optim.Adam(resnet_model.parameters(), lr=learning_rate)
-    epochs = 50
+    epochs = 30
     loss_fn = nn.CrossEntropyLoss()
     resnet_train_losses = []
     resnet_valid_losses = []

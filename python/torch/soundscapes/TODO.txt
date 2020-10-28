@@ -23,8 +23,9 @@ handle separators
 ./train.sh /data/train/ 1
 ./test.sh /data/test/ /wdata/solution.csv 1
 
-1. 5 sec learn estimate
-2. 5-fold 5 sec learn
+1. 5 sec learn estimate +
+2. 5-fold 5 sec learn -
+2.1. Remove speech
 3. Add data balance from audio slices
 4. Extract speech
 5. Model for each class?

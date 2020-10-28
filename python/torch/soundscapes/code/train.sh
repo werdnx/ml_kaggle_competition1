@@ -3,6 +3,7 @@
 cur_dir=$(pwd)
 echo "pwd is "
 echo "$cur_dir"
+mkdir /wdata/model
 if [ "$2" = "1" ]; then
   echo "not to do convertation"
 else

@@ -1,18 +1,41 @@
 import os
 import sys
 
+import numpy as np
 import pandas as pd
+import torch
+from tqdm import tqdm
+
+from audioutils import spec_to_image, get_melspectrogram_db
+from train import MODEL_PATH
+
+TEST_PATH = '/wdata/test'
+if torch.cuda.is_available():
+    device = torch.device('cuda:0')
+else:
+    device = torch.device('cpu')
 
 
 def test(data_folder, submission_path):
-    files_to_predict = [(os.path.join(data_folder, i), i) for i in os.listdir(data_folder)]
+    model = torch.load(MODEL_PATH)
+    model.eval()
+    files_to_predict = [(os.path.join(TEST_PATH, i), i) for i in os.listdir(data_folder)]
     result = []
-    for file in files_to_predict:
+    sm = torch.nn.Softmax(dim=1)
+    for file in tqdm(files_to_predict):
+        file_name = "{}".format(file[0].split(".")[0]) + '.wav'
+        clip_np = spec_to_image(get_melspectrogram_db(file_name))[np.newaxis, ...]
+        output = model(torch.from_numpy(clip_np).float()[None, ...].to(device))
+        arr = sm(output).data.cpu().numpy()
         result.append(
-            {"id": "{}".format(file[1].split(".")[0]), "A": 0.1, "B": 0.1, "C": 0.1, "D": 0.1, "E": 0.1, "F": 0.1,
-             "G": 0.1, "H": 0.1, "I": 0.1})
+            {"id": "{}".format(file[1].split(".")[0]), "A": arr[0][0], "B": arr[0][1],
+             "C": arr[0][2], "D": arr[0][3],
+             "E": arr[0][4],
+             "F": arr[0][5], "G": arr[0][6], "H": arr[0][7],
+             "I": arr[0][8]})
+
     result_df = pd.DataFrame(result)
-    result_df.to_csv(submission_path, header=True, index=False)
+    result_df.to_csv(submission_path, header=True, index=False, float_format='%.5f')
 
 
 def main():

@@ -4,98 +4,86 @@ import sys
 import numpy as np
 import pandas as pd
 import torch
-import torch.nn as nn
+import torch.nn.functional as F
 import torch.optim as optim
-from torch.utils.data import DataLoader
-from torchvision.models import resnet34
-from tqdm import tqdm
 
-from utils import ESC50Data
+from net import Net
+from sound_dataset import SoundDataset
 
 TRAIN_PATH = '/wdata/train'
 MODEL_PATH = '/wdata/model/trained_model'
-learning_rate = 2e-4
+
 if torch.cuda.is_available():
     device = torch.device('cuda:0')
 else:
     device = torch.device('cpu')
 
+net_model = Net()
+net_model.to(device)
+print(net_model)
 
-def setlr(optimizer, new_lr):
-    for param_group in optimizer.param_groups:
-        param_group['lr'] = new_lr
-    return optimizer
-
-
-def lr_decay(optimizer, epoch):
-    if epoch % 10 == 0:
-        new_lr = learning_rate / (10 ** (epoch // 10))
-        optimizer = setlr(optimizer, new_lr)
-        print(f'Changed learning rate to {new_lr}')
-    return optimizer
+log_interval = 20
+optimizer = optim.Adam(net_model.parameters(), lr=0.01, weight_decay=0.0001)
 
 
-def doTrain(model, loss_fn, train_loader, valid_loader, epochs, optimizer, train_losses, valid_losses, change_lr=None):
-    for epoch in tqdm(range(1, epochs + 1)):
-        model.train()
-        batch_losses = []
-        if change_lr:
-            optimizer = change_lr(optimizer, epoch)
-        for i, data in enumerate(train_loader):
-            x, y = data
-            optimizer.zero_grad()
-            x = x.to(device, dtype=torch.float16)
-            y = y.to(device, dtype=torch.long)
-            y_hat = model(x)
-            loss = loss_fn(y_hat, y)
-            loss.backward()
-            batch_losses.append(loss.item())
-            optimizer.step()
-        train_losses.append(batch_losses)
-        print(f'Epoch - {epoch} Train-Loss : {np.mean(train_losses[-1])}')
-        model.eval()
-        batch_losses = []
-        trace_y = []
-        trace_yhat = []
-        for i, data in enumerate(valid_loader):
-            x, y = data
-            x = x.to(device, dtype=torch.float32)
-            y = y.to(device, dtype=torch.long)
-            y_hat = model(x)
-            loss = loss_fn(y_hat, y)
-            trace_y.append(y.cpu().detach().numpy())
-            trace_yhat.append(y_hat.cpu().detach().numpy())
-            batch_losses.append(loss.item())
-        valid_losses.append(batch_losses)
-        trace_y = np.concatenate(trace_y)
-        trace_yhat = np.concatenate(trace_yhat)
-        accuracy = np.mean(trace_yhat.argmax(axis=1) == trace_y)
-        print(f'Epoch - {epoch} Valid-Loss : {np.mean(valid_losses[-1])} Valid-Accuracy : {accuracy}')
+def doTrain(model, epoch, train_loader):
+    model.train()
+    for batch_idx, (data, target) in enumerate(train_loader):
+        optimizer.zero_grad()
+        data = data.to(device)
+        target = target.to(device)
+        data = data.requires_grad_()  # set requires_grad to True for training
+        output = model(data)
+        output = output.permute(1, 0, 2)  # original output dimensions are batchSizex1x10
+        loss = F.nll_loss(output[0], target)  # the loss functions expects a batchSizex10 input
+        loss.backward()
+        optimizer.step()
+        if batch_idx % log_interval == 0:  # print training stats
+            print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
+                epoch, batch_idx * len(data), len(train_loader.dataset),
+                       100. * batch_idx / len(train_loader), loss))
+
+
+def validation(model, test_loader):
+    model.eval()
+    correct = 0
+    for data, target in test_loader:
+        data = data.to(device)
+        target = target.to(device)
+        output = model(data)
+        output = output.permute(1, 0, 2)
+        pred = output.max(2)[1]  # get the index of the max log-probability
+        correct += pred.eq(target).cpu().sum().item()
+    print('\nTest set: Accuracy: {}/{} ({:.0f}%)\n'.format(
+        correct, len(test_loader.dataset),
+        100. * correct / len(test_loader.dataset)))
 
 
 def train(data_folder):
+    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=20, gamma=0.1)
+
     df = pd.read_csv(os.path.join(data_folder, 'train_ground_truth.csv'), dtype={0: str, 1: str})
     msk = np.random.rand(len(df)) < 0.7
     train_df = df[msk]
     valid_df = df[~msk]
-    train_data = ESC50Data(TRAIN_PATH, train_df, 0, 1)
-    valid_data = ESC50Data(TRAIN_PATH, valid_df, 0, 1)
-    train_loader = DataLoader(train_data, batch_size=32, shuffle=True)
-    valid_loader = DataLoader(valid_data, batch_size=32, shuffle=True)
-    resnet_model = resnet34(pretrained=True)
-    #9 - num classes
-    resnet_model.fc = nn.Linear(512, 9)
-    resnet_model.conv1 = nn.Conv2d(1, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
-    resnet_model = resnet_model.to(device)
-    optimizer = optim.Adam(resnet_model.parameters(), lr=learning_rate)
-    epochs = 30
-    loss_fn = nn.CrossEntropyLoss()
-    resnet_train_losses = []
-    resnet_valid_losses = []
-    doTrain(resnet_model, loss_fn, train_loader, valid_loader, epochs, optimizer, resnet_train_losses,
-            resnet_valid_losses,
-            lr_decay)
-    torch.save(resnet_model, MODEL_PATH)
+
+    train_set = SoundDataset(TRAIN_PATH, train_df)
+    validation_set = SoundDataset(TRAIN_PATH, valid_df)
+    print("Train set size: " + str(len(train_set)))
+    print("Test set size: " + str(len(validation_set)))
+
+    kwargs = {'num_workers': 1, 'pin_memory': True} if device == 'cuda' else {}  # needed for using datasets on gpu
+    train_loader = torch.utils.data.DataLoader(train_set, batch_size=128, shuffle=True, **kwargs)
+    test_loader = torch.utils.data.DataLoader(validation_set, batch_size=128, shuffle=True, **kwargs)
+
+    for epoch in range(1, 40):
+        if epoch == 31:
+            print("First round of training complete. Setting learn rate to 0.001.")
+        scheduler.step()
+        doTrain(net_model, epoch, train_loader)
+        validation(net_model, epoch, test_loader)
+
+    torch.save(net_model, MODEL_PATH)
 
 
 def main():

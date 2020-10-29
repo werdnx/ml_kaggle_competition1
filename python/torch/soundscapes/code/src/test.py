@@ -9,7 +9,7 @@ from tqdm import tqdm
 from train import MODEL_PATH, FOLDS
 
 # TODO REPLACE BY TEST
-from utils import process_file
+from utils import process_file, DEF_FREQ
 
 TEST_PATH = '/wdata/test'
 if torch.cuda.is_available():
@@ -31,7 +31,7 @@ def test(data_folder, submission_path):
             if file[1].split(".")[0] != 'train_ground_truth':
                 file_name = "{}".format(file[0].split(".")[0]) + '.wav'
 
-                to_predict = process_file(file_name, 5)
+                to_predict = process_file(file_name, DEF_FREQ, False)
                 # clip_np = spec_to_image(get_melspectrogram_db(file_name))[np.newaxis, ...]
                 # output = model(torch.from_numpy(clip_np).float()[None, ...].to(device))
                 output = model(to_predict[None, ...].to(device))

@@ -10,13 +10,17 @@ augment = Compose([
     Shift(min_fraction=-0.5, max_fraction=0.5, p=0.5),
 ])
 SAMPLE_RATE = 16000
+DEF_FREQ = 5
 
 
 # Augmentation
 # https://github.com/iver56/audiomentations
-def process_file(file_path, freq):
+def process_file(file_path, freq=DEF_FREQ, train=True):
     sound = torchaudio.load(file_path, out=None, normalization=True)
-    augmented = augment(samples=sound[0], sample_rate=SAMPLE_RATE)
+    if train:
+        augmented = augment(samples=sound[0], sample_rate=SAMPLE_RATE)
+    else:
+        augmented = sound[0]
     # load returns a tensor with the sound data and the sampling frequency (44.1kHz for UrbanSound8K)
     soundData = mixer(augmented)
     # downsample the audio to ~8kHz

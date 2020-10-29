@@ -6,7 +6,7 @@ from tqdm import tqdm
 import torch
 
 # A,B,C,D,E,F,G,H,I
-from utils import process_file
+from utils import process_file, DEF_FREQ
 
 CATEGORIES = {'A': 0, 'B': 1, 'C': 2, 'D': 3, 'E': 4, 'F': 5, 'G': 6, 'H': 7, 'I': 8}
 # Frequency of samples, more frequent for less data labels
@@ -34,7 +34,7 @@ class SoundDataset(Dataset):
         row = self.df.iloc[index]
         path = os.path.join(self.base, row[0])
         path = path + '.wav'
-        sound_formatted = process_file(path, LABELS_TO_FREQ[self.labels[index]])
+        sound_formatted = process_file(path, DEF_FREQ, True)
         return sound_formatted, self.labels[index]
 
     def __len__(self):

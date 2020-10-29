@@ -8,7 +8,7 @@ import torch
 import torch.nn.functional as F
 import torch.optim as optim
 from tqdm import tqdm
-
+from torchsampler import ImbalancedDatasetSampler
 from net import Net
 from sound_dataset import SoundDataset
 
@@ -71,7 +71,8 @@ def train(data_folder):
         print("Test set size: " + str(len(validation_set)))
 
         kwargs = {'num_workers': 1, 'pin_memory': True} if device == 'cuda' else {}  # needed for using datasets on gpu
-        train_loader = torch.utils.data.DataLoader(train_set, batch_size=128, shuffle=True, **kwargs)
+        train_loader = torch.utils.data.DataLoader(train_set, sampler=ImbalancedDatasetSampler(train_set),
+                                                   batch_size=128, shuffle=True, **kwargs)
         test_loader = torch.utils.data.DataLoader(validation_set, batch_size=128, shuffle=True, **kwargs)
         net_model = Net()
         net_model.to(device)

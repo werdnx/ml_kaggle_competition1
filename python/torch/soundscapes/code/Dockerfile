@@ -9,6 +9,8 @@ RUN pip install seaborn
 RUN apt-get install -y ffmpeg
 RUN pip install noisereduce
 RUN pip install albumentations
+RUN pip install audiomentations
+RUN pip install -e git+https://github.com/ncullen93/torchsample.git#egg=torchsample
 RUN mkdir /work
 COPY . /work
 WORKDIR /work

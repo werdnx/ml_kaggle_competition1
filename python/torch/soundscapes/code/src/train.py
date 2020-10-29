@@ -8,7 +8,7 @@ import torch
 import torch.nn.functional as F
 import torch.optim as optim
 from tqdm import tqdm
-from torchsampler import ImbalancedDatasetSampler
+from torchsample import ImbalancedDatasetSampler
 from net import Net
 from sound_dataset import SoundDataset
 

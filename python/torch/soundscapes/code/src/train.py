@@ -1,6 +1,7 @@
 import os
 import sys
 
+from sklearn.model_selection import KFold
 import numpy as np
 import pandas as pd
 import torch
@@ -13,21 +14,16 @@ from sound_dataset import SoundDataset
 
 TRAIN_PATH = '/wdata/train'
 MODEL_PATH = '/wdata/model/trained_model'
+FOLDS = 5
+EPOCHS = 40
 
 if torch.cuda.is_available():
     device = torch.device('cuda:0')
 else:
     device = torch.device('cpu')
 
-net_model = Net()
-net_model.to(device)
-print(net_model)
 
-log_interval = 20
-optimizer = optim.Adam(net_model.parameters(), lr=0.01, weight_decay=0.0001)
-
-
-def doTrain(model, epoch, train_loader):
+def doTrain(model, epoch, train_loader, optimizer):
     model.train()
     for batch_idx, (data, target) in enumerate(train_loader):
         optimizer.zero_grad()
@@ -39,7 +35,7 @@ def doTrain(model, epoch, train_loader):
         loss = F.nll_loss(output[0], target)  # the loss functions expects a batchSizex10 input
         loss.backward()
         optimizer.step()
-        if batch_idx % log_interval == 0:  # print training stats
+        if batch_idx % 20 == 0:  # print training stats
             print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
                 epoch, batch_idx * len(data), len(train_loader.dataset),
                        100. * batch_idx / len(train_loader), loss))
@@ -61,30 +57,35 @@ def validation(model, test_loader):
 
 
 def train(data_folder):
-    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=20, gamma=0.1)
-
     df = pd.read_csv(os.path.join(data_folder, 'train_ground_truth.csv'), dtype={0: str, 1: str})
-    msk = np.random.rand(len(df)) < 0.7
-    train_df = df[msk]
-    valid_df = df[~msk]
 
-    train_set = SoundDataset(TRAIN_PATH, train_df)
-    validation_set = SoundDataset(TRAIN_PATH, valid_df)
-    print("Train set size: " + str(len(train_set)))
-    print("Test set size: " + str(len(validation_set)))
+    skf = KFold(n_splits=FOLDS, shuffle=True, random_state=42)
+    for fold, (idxT, idxV) in enumerate(skf.split(np.arange(len(df)))):
+        # msk = np.random.rand(len(df)) < 0.7
+        train_df = df[idxT]
+        valid_df = df[idxV]
 
-    kwargs = {'num_workers': 1, 'pin_memory': True} if device == 'cuda' else {}  # needed for using datasets on gpu
-    train_loader = torch.utils.data.DataLoader(train_set, batch_size=128, shuffle=True, **kwargs)
-    test_loader = torch.utils.data.DataLoader(validation_set, batch_size=128, shuffle=True, **kwargs)
+        train_set = SoundDataset(TRAIN_PATH, train_df)
+        validation_set = SoundDataset(TRAIN_PATH, valid_df)
+        print("Train set size: " + str(len(train_set)))
+        print("Test set size: " + str(len(validation_set)))
 
-    for epoch in tqdm(range(1, 40 + 1)):
-        if epoch == 31:
-            print("First round of training complete. Setting learn rate to 0.001.")
-        scheduler.step()
-        doTrain(net_model, epoch, train_loader)
-        validation(net_model, epoch, test_loader)
+        kwargs = {'num_workers': 1, 'pin_memory': True} if device == 'cuda' else {}  # needed for using datasets on gpu
+        train_loader = torch.utils.data.DataLoader(train_set, batch_size=128, shuffle=True, **kwargs)
+        test_loader = torch.utils.data.DataLoader(validation_set, batch_size=128, shuffle=True, **kwargs)
+        net_model = Net()
+        net_model.to(device)
+        print(net_model)
+        optimizer = optim.Adam(net_model.parameters(), lr=0.01, weight_decay=0.0001)
+        scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=20, gamma=0.1)
+        for epoch in tqdm(range(1, EPOCHS + 1)):
+            if epoch == 31:
+                print("First round of training complete. Setting learn rate to 0.001.")
+            scheduler.step()
+            doTrain(net_model, epoch, train_loader, optimizer)
+            validation(net_model, epoch, test_loader)
 
-    torch.save(net_model, MODEL_PATH)
+        torch.save(net_model, MODEL_PATH + '_fold' + str(fold))
 
 
 def main():

@@ -6,8 +6,7 @@ import pandas as pd
 import torch
 from tqdm import tqdm
 
-from audioutils import spec_to_image, get_melspectrogram_db
-from train import MODEL_PATH
+from train import MODEL_PATH, FOLDS
 
 # TODO REPLACE BY TEST
 from utils import process_file
@@ -20,31 +19,67 @@ else:
 
 
 def test(data_folder, submission_path):
-    model = torch.load(MODEL_PATH)
-    model.eval()
     files_to_predict = [(os.path.join(TEST_PATH, i), i) for i in os.listdir(data_folder)]
-    result = []
+    dfs = []
     # sm = torch.nn.Softmax(dim=1)
-    for file in tqdm(files_to_predict):
-        if file[1].split(".")[0] != 'train_ground_truth':
-            file_name = "{}".format(file[0].split(".")[0]) + '.wav'
+    for fold in tqdm(np.arange(FOLDS)):
+        print('process fold ' + str(fold))
+        model = torch.load(MODEL_PATH + '_fold' + str(fold))
+        model.eval()
+        result = []
+        for file in tqdm(files_to_predict):
+            if file[1].split(".")[0] != 'train_ground_truth':
+                file_name = "{}".format(file[0].split(".")[0]) + '.wav'
 
-            to_predict = process_file(file_name, 5)
-            # clip_np = spec_to_image(get_melspectrogram_db(file_name))[np.newaxis, ...]
-            # output = model(torch.from_numpy(clip_np).float()[None, ...].to(device))
-            output = model(to_predict[None, ...].to(device))
-            # arr = sm(output).data.cpu().numpy()
-            arr = output.data.cpu().numpy()
-            result.append(
-                {"id": "{}".format(file[1].split(".")[0]), "A": arr[0][0], "B": arr[0][1],
-                 "C": arr[0][2], "D": arr[0][3],
-                 "E": arr[0][4],
-                 "F": arr[0][5], "G": arr[0][6], "H": arr[0][7],
-                 "I": arr[0][8]})
-        else:
-            print("skip train_ground_truth")
+                to_predict = process_file(file_name, 5)
+                # clip_np = spec_to_image(get_melspectrogram_db(file_name))[np.newaxis, ...]
+                # output = model(torch.from_numpy(clip_np).float()[None, ...].to(device))
+                output = model(to_predict[None, ...].to(device))
+                # arr = sm(output).data.cpu().numpy()
+                arr = output.data.cpu().numpy()
+                result.append(
+                    {"id": "{}".format(file[1].split(".")[0]), "A": arr[0][0], "B": arr[0][1],
+                     "C": arr[0][2], "D": arr[0][3],
+                     "E": arr[0][4],
+                     "F": arr[0][5], "G": arr[0][6], "H": arr[0][7],
+                     "I": arr[0][8]})
+            else:
+                print("skip train_ground_truth")
+        dfs.append(pd.DataFrame(result))
 
-    result_df = pd.DataFrame(result)
+    # result_df = pd.DataFrame(result)
+    result_df = dfs[0].copy()
+    result_df['A'] = 0.0
+    result_df['B'] = 0.0
+    result_df['C'] = 0.0
+    result_df['D'] = 0.0
+    result_df['E'] = 0.0
+    result_df['F'] = 0.0
+    result_df['G'] = 0.0
+    result_df['H'] = 0.0
+    result_df['I'] = 0.0
+    for df in dfs:
+        result_df['A'] = result_df['A'] + df['A']
+        result_df['B'] = result_df['B'] + df['B']
+        result_df['C'] = result_df['C'] + df['C']
+        result_df['D'] = result_df['D'] + df['D']
+        result_df['E'] = result_df['E'] + df['E']
+        result_df['F'] = result_df['F'] + df['F']
+        result_df['G'] = result_df['G'] + df['G']
+        result_df['H'] = result_df['H'] + df['H']
+        result_df['I'] = result_df['I'] + df['I']
+
+    result_df['A'] = result_df['A'] / len(dfs)
+    result_df['B'] = result_df['B'] / len(dfs)
+    result_df['C'] = result_df['C'] / len(dfs)
+    result_df['D'] = result_df['D'] / len(dfs)
+    result_df['E'] = result_df['E'] / len(dfs)
+    result_df['F'] = result_df['F'] / len(dfs)
+    result_df['G'] = result_df['G'] / len(dfs)
+    result_df['H'] = result_df['H'] / len(dfs)
+    result_df['I'] = result_df['I'] / len(dfs)
+    print('res df norm')
+    print(result_df.head())
     result_df.to_csv(submission_path, header=True, index=False, float_format='%.2f')
 
 

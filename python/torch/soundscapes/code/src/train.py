@@ -6,6 +6,7 @@ import pandas as pd
 import torch
 import torch.nn.functional as F
 import torch.optim as optim
+from tqdm import tqdm
 
 from net import Net
 from sound_dataset import SoundDataset
@@ -76,7 +77,7 @@ def train(data_folder):
     train_loader = torch.utils.data.DataLoader(train_set, batch_size=128, shuffle=True, **kwargs)
     test_loader = torch.utils.data.DataLoader(validation_set, batch_size=128, shuffle=True, **kwargs)
 
-    for epoch in range(1, 40):
+    for epoch in tqdm(range(1, 40 + 1)):
         if epoch == 31:
             print("First round of training complete. Setting learn rate to 0.001.")
         scheduler.step()

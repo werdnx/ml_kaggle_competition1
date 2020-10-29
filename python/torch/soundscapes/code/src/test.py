@@ -10,6 +10,8 @@ from audioutils import spec_to_image, get_melspectrogram_db
 from train import MODEL_PATH
 
 # TODO REPLACE BY TEST
+from utils import process_file
+
 TEST_PATH = '/wdata/test'
 if torch.cuda.is_available():
     device = torch.device('cuda:0')
@@ -22,13 +24,17 @@ def test(data_folder, submission_path):
     model.eval()
     files_to_predict = [(os.path.join(TEST_PATH, i), i) for i in os.listdir(data_folder)]
     result = []
-    sm = torch.nn.Softmax(dim=1)
+    # sm = torch.nn.Softmax(dim=1)
     for file in tqdm(files_to_predict):
         if file[1].split(".")[0] != 'train_ground_truth':
             file_name = "{}".format(file[0].split(".")[0]) + '.wav'
-            clip_np = spec_to_image(get_melspectrogram_db(file_name))[np.newaxis, ...]
-            output = model(torch.from_numpy(clip_np).float()[None, ...].to(device))
-            arr = sm(output).data.cpu().numpy()
+
+            to_predict = process_file(file_name, 5)
+            # clip_np = spec_to_image(get_melspectrogram_db(file_name))[np.newaxis, ...]
+            # output = model(torch.from_numpy(clip_np).float()[None, ...].to(device))
+            output = model(to_predict[None, ...].to(device))
+            # arr = sm(output).data.cpu().numpy()
+            arr = output.data.cpu().numpy()
             result.append(
                 {"id": "{}".format(file[1].split(".")[0]), "A": arr[0][0], "B": arr[0][1],
                  "C": arr[0][2], "D": arr[0][3],

@@ -3,9 +3,15 @@ import os
 import torchaudio
 from torch.utils.data import Dataset
 from tqdm import tqdm
+import torch
 
 # A,B,C,D,E,F,G,H,I
+from utils import process_file
+
 CATEGORIES = {'A': 0, 'B': 1, 'C': 2, 'D': 3, 'E': 4, 'F': 5, 'G': 6, 'H': 7, 'I': 8}
+# Frequency of samples, more frequent for less data labels
+# TODO calibrate reqs
+LABELS_TO_FREQ = {0: 5, 1: 5, 2: 5, 3: 5, 4: 5, 5: 5, 6: 5, 7: 5, 8: 5}
 
 
 class SoundDataset(Dataset):
@@ -22,28 +28,14 @@ class SoundDataset(Dataset):
         for ind in tqdm(range(len(df))):
             row = df.iloc[ind]
             self.labels.append(CATEGORIES[row[1]])
-        self.mixer = torchaudio.transforms.DownmixMono()
 
     def __getitem__(self, index):
         # format the file path and load the file
         row = self.df.iloc[index]
         path = os.path.join(self.base, row[0])
         path = path + '.wav'
-        sound = torchaudio.load(path, out=None, normalization=True)
-        # load returns a tensor with the sound data and the sampling frequency (44.1kHz for UrbanSound8K)
-        soundData = self.mixer(sound[0])
-        # downsample the audio to ~8kHz
-        tempData = torch.zeros([160000, 1])  # tempData accounts for audio clips that are too short
-        if soundData.numel() < 160000:
-            tempData[:soundData.numel()] = soundData[:]
-        else:
-            tempData[:] = soundData[:160000]
-
-        soundData = tempData
-        soundFormatted = torch.zeros([32000, 1])
-        soundFormatted[:32000] = soundData[::5]  # take every fifth sample of soundData
-        soundFormatted = soundFormatted.permute(1, 0)
-        return soundFormatted, self.labels[index]
+        sound_formatted = process_file(path, LABELS_TO_FREQ[self.labels[index]])
+        return sound_formatted, self.labels[index]
 
     def __len__(self):
         return len(self.file_names)

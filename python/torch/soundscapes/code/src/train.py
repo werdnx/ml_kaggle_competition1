@@ -10,7 +10,8 @@ from sklearn.model_selection import KFold
 from tqdm import tqdm
 
 from net import Net
-from sound_dataset import SoundDataset
+from sampler import SoundDatasetSampler
+from sound_dataset import SoundDataset, sampler_label_callback
 
 TRAIN_PATH = '/wdata/train'
 MODEL_PATH = '/wdata/model/trained_model'
@@ -73,7 +74,10 @@ def train(data_folder):
 
         kwargs = {'num_workers': 1, 'pin_memory': True} if device == 'cuda' else {}  # needed for using datasets on gpu
         train_loader = torch.utils.data.DataLoader(train_set,
-                                                   batch_size=BATCH_SIZE, shuffle=True, num_workers=4, **kwargs)
+                                                   batch_size=BATCH_SIZE, shuffle=True,
+                                                   sampler=SoundDatasetSampler(train_set,
+                                                                               callback_get_label=sampler_label_callback),
+                                                   num_workers=4, **kwargs)
         test_loader = torch.utils.data.DataLoader(validation_set, batch_size=BATCH_SIZE, shuffle=True, num_workers=4,
                                                   **kwargs)
         net_model = Net()

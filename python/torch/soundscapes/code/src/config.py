@@ -1,6 +1,11 @@
 TRAIN_PATH = '/wdata/train'
 PREPROCESS_PATH = '/wdata/preprocessed_audio/'
-SAMPLE_RATE = 16000
+PREPROCESS_PATH_TEST = '/wdata/preprocessed_audio_test/'
+MODEL_PATH = '/wdata/model/trained_model'
 TEST_PATH = '/wdata/test'
-DEF_FREQ = 5
-AUGMENT = False
+SAMPLE_RATE = 16000
+DEF_FREQ = 2
+AUGMENT = True
+FOLDS = 5
+EPOCHS = 50
+BATCH_SIZE = 64

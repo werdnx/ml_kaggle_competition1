@@ -12,6 +12,8 @@ augment = Compose([
     Shift(min_fraction=-0.5, max_fraction=0.5, p=0.5),
 ])
 
+CUT_SIZE = 32000 * DEF_FREQ
+
 
 # Augmentation
 def process_file(file_path, freq=DEF_FREQ, train=True):
@@ -32,11 +34,11 @@ def process_file(file_path, freq=DEF_FREQ, train=True):
     # sound_data = mixer(augmented)
     # downsample the audio to ~8kHz
     sound_data = torch.from_numpy(sound_data.reshape((sound_data.shape[0], 1)))
-    temp_data = torch.zeros([160000, 1])  # temp_data accounts for audio clips that are too short
-    if sound_data.numel() < 160000:
+    temp_data = torch.zeros([CUT_SIZE, 1])  # temp_data accounts for audio clips that are too short
+    if sound_data.numel() < CUT_SIZE:
         temp_data[:sound_data.numel()] = sound_data[:]
     else:
-        temp_data[:] = sound_data[:160000]
+        temp_data[:] = sound_data[:CUT_SIZE]
 
     sound_data = temp_data
     sound_formatted = torch.zeros([32000, 1])
@@ -52,11 +54,11 @@ def process_sound(sound_data, freq=DEF_FREQ, train=True):
     # sound_data = mixer(augmented)
     # downsample the audio to ~8kHz
     sound_data = torch.from_numpy(sound_data.reshape((sound_data.shape[0], 1)))
-    temp_data = torch.zeros([160000, 1])  # temp_data accounts for audio clips that are too short
-    if sound_data.numel() < 160000:
+    temp_data = torch.zeros([CUT_SIZE, 1])  # temp_data accounts for audio clips that are too short
+    if sound_data.numel() < CUT_SIZE:
         temp_data[:sound_data.numel()] = sound_data[:]
     else:
-        temp_data[:] = sound_data[:160000]
+        temp_data[:] = sound_data[:CUT_SIZE]
 
     sound_data = temp_data
     sound_formatted = torch.zeros([32000, 1])

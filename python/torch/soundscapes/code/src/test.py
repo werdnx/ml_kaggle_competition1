@@ -6,10 +6,8 @@ import pandas as pd
 import torch
 from tqdm import tqdm
 
-from config import TEST_PATH
-from train import MODEL_PATH, FOLDS
-# TODO REPLACE BY TEST
-from utils import process_file, DEF_FREQ
+from config import TEST_PATH, FOLDS, MODEL_PATH, PREPROCESS_PATH_TEST
+from utils import DEF_FREQ, process_sound
 
 if torch.cuda.is_available():
     device = torch.device('cuda:0')
@@ -17,27 +15,42 @@ else:
     device = torch.device('cpu')
 
 
+def prepare_predict_data(files_to_predict):
+    result = []
+    for file in tqdm(files_to_predict):
+        if file[1].split(".")[0] != 'train_ground_truth':
+            file_name = PREPROCESS_PATH_TEST + file[1].split(".")[0] + '.npy'
+            sound = np.load(file_name)
+            to_predict = process_sound(sound, DEF_FREQ, False)
+            result.append({0: file[1], 1: to_predict})
+    return result
+
+
 def test(data_folder, submission_path):
     files_to_predict = [(os.path.join(TEST_PATH, i), i) for i in os.listdir(data_folder)]
     dfs = []
+    predict_data = prepare_predict_data(files_to_predict)
     # sm = torch.nn.Softmax(dim=1)
     for fold in tqdm(np.arange(FOLDS)):
         print('process fold ' + str(fold))
         model = torch.load(MODEL_PATH + '_fold' + str(fold))
         model.eval()
         result = []
-        for file in tqdm(files_to_predict):
-            if file[1].split(".")[0] != 'train_ground_truth':
-                file_name = "{}".format(file[0].split(".")[0]) + '.wav'
-
-                to_predict = process_file(file_name, DEF_FREQ, False)
+        for p_data in tqdm(predict_data):
+            if p_data[0].split(".")[0] != 'train_ground_truth':
+                # file_name = "{}".format(file[0].split(".")[0]) + '.wav'
+                # to_predict = process_file(file_name, DEF_FREQ, False)
                 # clip_np = spec_to_image(get_melspectrogram_db(file_name))[np.newaxis, ...]
                 # output = model(torch.from_numpy(clip_np).float()[None, ...].to(device))
-                output = model(to_predict[None, ...].to(device))
+                output = model(p_data[1][None, ...].to(device))
                 # arr = sm(output).data.cpu().numpy()
-                arr = output.data.cpu().numpy()
+                arr = torch.exp(output).data.cpu().numpy()
+                # arr = output.data.cpu().numpy()
+                # print('arr is ')
+                # print(arr)
+                arr = arr[0]
                 result.append(
-                    {"id": "{}".format(file[1].split(".")[0]), "A": arr[0][0], "B": arr[0][1],
+                    {"id": "{}".format(p_data[0].split(".")[0]), "A": arr[0][0], "B": arr[0][1],
                      "C": arr[0][2], "D": arr[0][3],
                      "E": arr[0][4],
                      "F": arr[0][5], "G": arr[0][6], "H": arr[0][7],

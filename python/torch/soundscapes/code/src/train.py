@@ -9,15 +9,12 @@ import torch.optim as optim
 from sklearn.model_selection import KFold
 from tqdm import tqdm
 
+from config import FOLDS, TRAIN_PATH, BATCH_SIZE, EPOCHS, MODEL_PATH
 from net import Net
 from sampler import SoundDatasetSampler
 from sound_dataset import SoundDataset, sampler_label_callback
 
-TRAIN_PATH = '/wdata/train'
-MODEL_PATH = '/wdata/model/trained_model'
-FOLDS = 5
-EPOCHS = 40
-BATCH_SIZE = 64
+
 
 if torch.cuda.is_available():
     device = torch.device('cuda:0')
@@ -69,17 +66,21 @@ def train(data_folder):
 
         train_set = SoundDataset(TRAIN_PATH, train_df)
         validation_set = SoundDataset(TRAIN_PATH, valid_df)
+        print('fold ' + str(fold))
         print("Train set size: " + str(len(train_set)))
         print("Test set size: " + str(len(validation_set)))
 
-        kwargs = {'num_workers': 1, 'pin_memory': True} if device == 'cuda' else {}  # needed for using datasets on gpu
+        # kwargs = {'num_workers': 1, 'pin_memory': True} if device == 'cuda' else {}  # needed for using datasets on gpu
         train_loader = torch.utils.data.DataLoader(train_set,
                                                    batch_size=BATCH_SIZE, shuffle=False,
                                                    sampler=SoundDatasetSampler(train_set,
                                                                                callback_get_label=sampler_label_callback),
-                                                   num_workers=4, **kwargs)
-        test_loader = torch.utils.data.DataLoader(validation_set, batch_size=BATCH_SIZE, shuffle=False, num_workers=4,
-                                                  **kwargs)
+                                                   num_workers=4
+                                                   # , **kwargs
+                                                   )
+        test_loader = torch.utils.data.DataLoader(validation_set, batch_size=BATCH_SIZE, shuffle=False, num_workers=4
+                                                  # ,**kwargs
+                                                  )
         net_model = Net()
         net_model.to(device)
         print(net_model)

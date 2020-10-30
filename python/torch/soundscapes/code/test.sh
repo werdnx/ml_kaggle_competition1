@@ -12,5 +12,12 @@ else
   bash "${cur_dir}/cnv.sh" /wdata/test
   cd "$cur_dir"
 fi
+if [ "$2" = "1" ]; then
+  echo "not to do audio preprocessing"
+else
+  echo "do test audio pre processing"
+  mkdir /wdata/preprocessed_audio_test
+  python3 ./src/preprocess_audio_test.py "$1" "$2"
+fi
 
 python3 ./src/test.py "$1" "$2"

@@ -1,10 +1,12 @@
 import os
 
+import numpy as np
 from torch.utils.data import Dataset
 from tqdm import tqdm
-import librosa
+
 # A,B,C,D,E,F,G,H,I
-from utils import process_file, DEF_FREQ, SAMPLE_RATE, process_sound
+from config import AUGMENT, PREPROCESS_PATH, DEF_FREQ
+from utils import process_sound
 
 CATEGORIES = {'A': 0, 'B': 1, 'C': 2, 'D': 3, 'E': 4, 'F': 5, 'G': 6, 'H': 7, 'I': 8}
 # Frequency of samples, more frequent for less data labels
@@ -23,20 +25,19 @@ class SoundDataset(Dataset):
         self.df = df
         self.base = base
         self.labels = []
-        self.sounds = []
         for ind in tqdm(range(len(df))):
             row = df.iloc[ind]
             self.labels.append(CATEGORIES[row[1]])
-            path = os.path.join(self.base, row[0])
-            path = path + '.wav'
-            sound, r = librosa.load(path, sr=SAMPLE_RATE, mono=True)
-            sound = librosa.util.normalize(sound, axis=0)
-            self.sounds.append(sound)
 
     def __getitem__(self, index):
         # format the file path and load the file
         row = self.df.iloc[index]
-        sound_formatted = process_sound(self.sounds[index], DEF_FREQ, True)
+        # read from preprocessed npy file
+        path = os.path.join(PREPROCESS_PATH, row[0])
+        path = path + '.npy'
+        preprocessed = np.load(path)
+        sound_formatted = process_sound(preprocessed, DEF_FREQ, AUGMENT)
+
         return sound_formatted, self.labels[index]
 
     def __len__(self):

@@ -6,12 +6,11 @@ import pandas as pd
 import torch
 from tqdm import tqdm
 
+from config import TEST_PATH
 from train import MODEL_PATH, FOLDS
-
 # TODO REPLACE BY TEST
 from utils import process_file, DEF_FREQ
 
-TEST_PATH = '/wdata/test'
 if torch.cuda.is_available():
     device = torch.device('cuda:0')
 else:

@@ -20,7 +20,7 @@ This should overwrite the ./model/dummy-model.txt file, so subsequent testing wi
 ffmpeg from data to wdata using bash +
 handle separators
 #1-MEANS SKIP CONVERTATION
-./train.sh /data/train/ 1
+./train.sh /data/train/ 1 1
 ./test.sh /data/test/ /wdata/solution.csv 1
 
 1. 5 sec learn estimate +

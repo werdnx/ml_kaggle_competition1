@@ -30,7 +30,6 @@ def main():
     print('res df norm')
     print(result_df.head())
 
-
     skf = KFold(n_splits=5, shuffle=True, random_state=42)
     for fold, (idxT, idxV) in enumerate(skf.split(np.arange(2300))):
         print('Train')
@@ -41,7 +40,6 @@ def main():
     print(msk)
     f = process_file('/Users/dmitrenkoandrey/PycharmProjects/ml_kaggle_competition1/temp/1765711516.wav')
     print(f)
-
 
 
 if __name__ == "__main__":

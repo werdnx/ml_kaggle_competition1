@@ -41,3 +41,7 @@ class SoundDataset(Dataset):
 
     def __len__(self):
         return len(self.df)
+
+
+def sampler_label_callback(dataset, index):
+    return dataset.labels[index]

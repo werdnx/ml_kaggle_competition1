@@ -1,2 +1,4 @@
 # Created by .ignore support plugin (hsz.mobi)
 venv/*
+/.idea/
+/python/old_melanoma/__init__.py

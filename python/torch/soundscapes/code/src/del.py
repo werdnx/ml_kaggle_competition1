@@ -1,5 +1,8 @@
 import numpy as np
 import pandas as pd
+from sklearn.model_selection import KFold
+
+from utils import process_file
 
 
 def main():
@@ -26,6 +29,19 @@ def main():
     result_df['B'] = result_df['B'] / len(dfs)
     print('res df norm')
     print(result_df.head())
+
+
+    skf = KFold(n_splits=5, shuffle=True, random_state=42)
+    for fold, (idxT, idxV) in enumerate(skf.split(np.arange(2300))):
+        print('Train')
+        print(idxT)
+        print('Validation')
+        print(idxV)
+    msk = np.random.rand(2300) < 0.7
+    print(msk)
+    f = process_file('/Users/dmitrenkoandrey/PycharmProjects/ml_kaggle_competition1/temp/1765711516.wav')
+    print(f)
+
 
 
 if __name__ == "__main__":

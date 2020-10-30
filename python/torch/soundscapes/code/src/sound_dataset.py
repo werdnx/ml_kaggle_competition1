@@ -36,4 +36,4 @@ class SoundDataset(Dataset):
         return sound_formatted, self.labels[index]
 
     def __len__(self):
-        return len(self.file_names)
+        return len(self.df)

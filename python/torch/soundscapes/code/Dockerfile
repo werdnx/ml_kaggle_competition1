@@ -10,11 +10,7 @@ RUN apt-get install -y ffmpeg
 RUN pip install noisereduce
 RUN pip install albumentations
 RUN pip install audiomentations
-RUN apt-get update && apt-get install -y git
-RUN git clone https://github.com/ufoym/imbalanced-dataset-sampler.git imbalanced-dataset-sampler
-RUN cd imbalanced-dataset-sampler
-RUN python3 setup.py install
-RUN pip3 install .
+#RUN pip install torchaudio
 RUN mkdir /work
 COPY . /work
 WORKDIR /work

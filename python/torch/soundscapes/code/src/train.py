@@ -1,14 +1,14 @@
 import os
 import sys
 
-from sklearn.model_selection import KFold
 import numpy as np
 import pandas as pd
 import torch
 import torch.nn.functional as F
 import torch.optim as optim
+from sklearn.model_selection import KFold
 from tqdm import tqdm
-from torchsample import ImbalancedDatasetSampler
+
 from net import Net
 from sound_dataset import SoundDataset
 
@@ -16,6 +16,7 @@ TRAIN_PATH = '/wdata/train'
 MODEL_PATH = '/wdata/model/trained_model'
 FOLDS = 5
 EPOCHS = 40
+BATCH_SIZE = 128
 
 if torch.cuda.is_available():
     device = torch.device('cuda:0')
@@ -35,16 +36,16 @@ def doTrain(model, epoch, train_loader, optimizer):
         loss = F.nll_loss(output[0], target)  # the loss functions expects a batchSizex10 input
         loss.backward()
         optimizer.step()
-        if batch_idx % 20 == 0:  # print training stats
-            print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
-                epoch, batch_idx * len(data), len(train_loader.dataset),
-                       100. * batch_idx / len(train_loader), loss))
+        # if batch_idx % 20 == 0:  # print training stats
+        print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
+            epoch, batch_idx * len(data), len(train_loader.dataset),
+                   100. * batch_idx / len(train_loader), loss))
 
 
 def validation(model, test_loader):
     model.eval()
     correct = 0
-    for data, target in test_loader:
+    for data, target in tqdm(test_loader):
         data = data.to(device)
         target = target.to(device)
         output = model(data)
@@ -62,8 +63,8 @@ def train(data_folder):
     skf = KFold(n_splits=FOLDS, shuffle=True, random_state=42)
     for fold, (idxT, idxV) in enumerate(skf.split(np.arange(len(df)))):
         # msk = np.random.rand(len(df)) < 0.7
-        train_df = df[idxT]
-        valid_df = df[idxV]
+        train_df = df[df.index.isin(idxT)]
+        valid_df = df[df.index.isin(idxV)]
 
         train_set = SoundDataset(TRAIN_PATH, train_df)
         validation_set = SoundDataset(TRAIN_PATH, valid_df)
@@ -71,9 +72,10 @@ def train(data_folder):
         print("Test set size: " + str(len(validation_set)))
 
         kwargs = {'num_workers': 1, 'pin_memory': True} if device == 'cuda' else {}  # needed for using datasets on gpu
-        train_loader = torch.utils.data.DataLoader(train_set, sampler=ImbalancedDatasetSampler(train_set),
-                                                   batch_size=128, shuffle=True, **kwargs)
-        test_loader = torch.utils.data.DataLoader(validation_set, batch_size=128, shuffle=True, **kwargs)
+        train_loader = torch.utils.data.DataLoader(train_set,
+                                                   batch_size=BATCH_SIZE, shuffle=True, num_workers=4, **kwargs)
+        test_loader = torch.utils.data.DataLoader(validation_set, batch_size=BATCH_SIZE, shuffle=True, num_workers=4,
+                                                  **kwargs)
         net_model = Net()
         net_model.to(device)
         print(net_model)
@@ -82,9 +84,9 @@ def train(data_folder):
         for epoch in tqdm(range(1, EPOCHS + 1)):
             if epoch == 31:
                 print("First round of training complete. Setting learn rate to 0.001.")
-            scheduler.step()
             doTrain(net_model, epoch, train_loader, optimizer)
-            validation(net_model, epoch, test_loader)
+            scheduler.step()
+            validation(net_model, test_loader)
 
         torch.save(net_model, MODEL_PATH + '_fold' + str(fold))
 

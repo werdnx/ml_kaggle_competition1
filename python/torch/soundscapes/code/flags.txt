@@ -1,1 +1,1 @@
---gpus all
+--gpus all --shm-size=256m

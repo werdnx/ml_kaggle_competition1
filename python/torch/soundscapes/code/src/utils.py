@@ -43,3 +43,23 @@ def process_file(file_path, freq=DEF_FREQ, train=True):
     soundFormatted[:32000] = sound_data[::freq]
     soundFormatted = soundFormatted.permute(1, 0)
     return soundFormatted
+
+
+def process_sound(sound_data, freq=DEF_FREQ, train=True):
+    if train:
+        sound_data = augment(samples=sound_data, sample_rate=SAMPLE_RATE)
+    # sound_data = mixer(augmented)
+    # downsample the audio to ~8kHz
+    sound_data = torch.from_numpy(sound_data.reshape((sound_data.shape[0], 1)))
+    tempData = torch.zeros([160000, 1])  # tempData accounts for audio clips that are too short
+    if sound_data.numel() < 160000:
+        tempData[:sound_data.numel()] = sound_data[:]
+    else:
+        tempData[:] = sound_data[:160000]
+
+    sound_data = tempData
+    soundFormatted = torch.zeros([32000, 1])
+    # soundFormatted[:32000] = sound_data[::5]  # take every fifth sample of sound_data
+    soundFormatted[:32000] = sound_data[::freq]
+    soundFormatted = soundFormatted.permute(1, 0)
+    return soundFormatted

@@ -16,7 +16,7 @@ TRAIN_PATH = '/wdata/train'
 MODEL_PATH = '/wdata/model/trained_model'
 FOLDS = 5
 EPOCHS = 40
-BATCH_SIZE = 128
+BATCH_SIZE = 64
 
 if torch.cuda.is_available():
     device = torch.device('cuda:0')

@@ -4,17 +4,16 @@ import sys
 import numpy as np
 import pandas as pd
 import torch
-import torch.nn.functional as F
 import torch.optim as optim
 from sklearn.model_selection import KFold
 from tqdm import tqdm
 
 from config import FOLDS, TRAIN_PATH, BATCH_SIZE, EPOCHS, MODEL_PATH
+from loss_function import LabelSmoothingCrossEntropy
 from net import Net
 from sampler import SoundDatasetSampler
 from sound_dataset import SoundDataset, sampler_label_callback
-
-
+from sklearn.metrics import log_loss
 
 if torch.cuda.is_available():
     device = torch.device('cuda:0')
@@ -23,6 +22,7 @@ else:
 
 
 def doTrain(model, epoch, train_loader, optimizer):
+    loss_f = LabelSmoothingCrossEntropy()
     model.train()
     for batch_idx, (data, target) in enumerate(train_loader):
         optimizer.zero_grad()
@@ -31,11 +31,12 @@ def doTrain(model, epoch, train_loader, optimizer):
         data = data.requires_grad_()  # set requires_grad to True for training
         output = model(data)
         output = output.permute(1, 0, 2)  # original output dimensions are batchSizex1x10
-        loss = F.nll_loss(output[0], target)  # the loss functions expects a batchSizex10 input
+        # loss = F.nll_loss(output[0], target)  # the loss functions expects a batchSizex10 input
+        loss = loss_f(output[0], target)
         loss.backward()
         optimizer.step()
-        # if batch_idx % 20 == 0:  # print training stats
-        print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
+        if batch_idx % 20 == 0:  # print training stats
+            print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
             epoch, batch_idx * len(data), len(train_loader.dataset),
                    100. * batch_idx / len(train_loader), loss))
 

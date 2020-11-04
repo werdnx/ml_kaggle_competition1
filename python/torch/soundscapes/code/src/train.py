@@ -13,7 +13,6 @@ from loss_function import LabelSmoothingCrossEntropy
 from net import Net
 from sampler import SoundDatasetSampler
 from sound_dataset import SoundDataset, sampler_label_callback
-from sklearn.metrics import log_loss
 
 if torch.cuda.is_available():
     device = torch.device('cuda:0')
@@ -33,17 +32,20 @@ def doTrain(model, epoch, train_loader, optimizer):
         output = output.permute(1, 0, 2)  # original output dimensions are batchSizex1x10
         # loss = F.nll_loss(output[0], target)  # the loss functions expects a batchSizex10 input
         loss = loss_f(output[0], target)
+        # loss = log_loss(output[0], target)
         loss.backward()
         optimizer.step()
         if batch_idx % 20 == 0:  # print training stats
             print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
-            epoch, batch_idx * len(data), len(train_loader.dataset),
-                   100. * batch_idx / len(train_loader), loss))
+                epoch, batch_idx * len(data), len(train_loader.dataset),
+                       100. * batch_idx / len(train_loader), loss))
 
 
 def validation(model, test_loader):
     model.eval()
     correct = 0
+    targets = []
+    preds = []
     for data, target in tqdm(test_loader):
         data = data.to(device)
         target = target.to(device)
@@ -51,6 +53,7 @@ def validation(model, test_loader):
         output = output.permute(1, 0, 2)
         pred = output.max(2)[1]  # get the index of the max log-probability
         correct += pred.eq(target).cpu().sum().item()
+        preds.append(pred)
     print('\nTest set: Accuracy: {}/{} ({:.0f}%)\n'.format(
         correct, len(test_loader.dataset),
         100. * correct / len(test_loader.dataset)))
@@ -71,17 +74,13 @@ def train(data_folder):
         print("Train set size: " + str(len(train_set)))
         print("Test set size: " + str(len(validation_set)))
 
-        # kwargs = {'num_workers': 1, 'pin_memory': True} if device == 'cuda' else {}  # needed for using datasets on gpu
         train_loader = torch.utils.data.DataLoader(train_set,
                                                    batch_size=BATCH_SIZE, shuffle=False,
                                                    sampler=SoundDatasetSampler(train_set,
                                                                                callback_get_label=sampler_label_callback),
                                                    num_workers=4
-                                                   # , **kwargs
                                                    )
-        test_loader = torch.utils.data.DataLoader(validation_set, batch_size=BATCH_SIZE, shuffle=False, num_workers=4
-                                                  # ,**kwargs
-                                                  )
+        test_loader = torch.utils.data.DataLoader(validation_set, batch_size=BATCH_SIZE, shuffle=False, num_workers=4)
         net_model = Net()
         net_model.to(device)
         print(net_model)

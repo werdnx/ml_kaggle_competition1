@@ -5,7 +5,7 @@ from torch.utils.data import Dataset
 from tqdm import tqdm
 
 # A,B,C,D,E,F,G,H,I
-from config import AUGMENT, PREPROCESS_PATH, DEF_FREQ
+from config import AUGMENT, PREPROCESS_PATH, DEF_FREQ, TEST_PATH, PREPROCESS_PATH_TEST
 from utils import process_sound
 
 CATEGORIES = {'A': 0, 'B': 1, 'C': 2, 'D': 3, 'E': 4, 'F': 5, 'G': 6, 'H': 7, 'I': 8}
@@ -33,10 +33,7 @@ class SoundDataset(Dataset):
         # format the file path and load the file
         row = self.df.iloc[index]
         # read from preprocessed npy file
-        path = os.path.join(PREPROCESS_PATH, row[0])
-        path = path + '.npy'
-        preprocessed = np.load(path)
-        sound_formatted = process_sound(preprocessed, DEF_FREQ, AUGMENT)
+        sound_formatted = process_npy_file(PREPROCESS_PATH, row)
 
         return sound_formatted, self.labels[index]
 
@@ -44,5 +41,31 @@ class SoundDataset(Dataset):
         return len(self.df)
 
 
+def process_npy_file(path, name):
+    path = os.path.join(path, name)
+    path = path + '.npy'
+    preprocessed = np.load(path)
+    sound_formatted = process_sound(preprocessed, DEF_FREQ, AUGMENT)
+    return sound_formatted
+
+
 def sampler_label_callback(dataset, index):
     return dataset.labels[index]
+
+
+class SoundDatasetTest(Dataset):
+
+    def __init__(self, base):
+        self.base = base
+        self.files_to_predict = [(os.path.join(TEST_PATH, i), i) for i in os.listdir(base)]
+
+    def __getitem__(self, index):
+        # format the file path and load the file
+        name = self.files_to_predict[index]
+        # read from preprocessed npy file
+        sound_formatted = process_npy_file(PREPROCESS_PATH_TEST, name[1].split(".")[0])
+
+        return sound_formatted, name[1].split(".")[0]
+
+    def __len__(self):
+        return len(self.files_to_predict)

@@ -12,7 +12,7 @@ else
   bash "${cur_dir}/cnv.sh" /wdata/test
   cd "$cur_dir"
 fi
-if [ "$2" = "1" ]; then
+if [ "$4" = "1" ]; then
   echo "not to do audio preprocessing"
 else
   echo "do test audio pre processing"

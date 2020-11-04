@@ -7,6 +7,7 @@ import torch
 from tqdm import tqdm
 
 from config import TEST_PATH, FOLDS, MODEL_PATH, PREPROCESS_PATH_TEST
+from sound_dataset import SoundDatasetTest
 from utils import DEF_FREQ, process_sound
 
 if torch.cuda.is_available():
@@ -29,28 +30,33 @@ def prepare_predict_data(files_to_predict):
 def test(data_folder, submission_path):
     files_to_predict = [(os.path.join(TEST_PATH, i), i) for i in os.listdir(data_folder)]
     dfs = []
-    predict_data = prepare_predict_data(files_to_predict)
+    # predict_data = prepare_predict_data(files_to_predict)
     # sm = torch.nn.Softmax(dim=1)
+    train_set = SoundDatasetTest(data_folder)
+    test_loader = torch.utils.data.DataLoader(train_set, batch_size=1, shuffle=False, num_workers=4)
     for fold in tqdm(np.arange(FOLDS)):
         print('process fold ' + str(fold))
         model = torch.load(MODEL_PATH + '_fold' + str(fold))
         model.eval()
         result = []
-        for p_data in tqdm(predict_data):
-            if p_data[0].split(".")[0] != 'train_ground_truth':
+        for data, target in tqdm(test_loader):
+            if data is not None:
+                data = data.to(device)
+                output = model(data)
+                arr = torch.exp(output).data.cpu().numpy()
                 # file_name = "{}".format(file[0].split(".")[0]) + '.wav'
                 # to_predict = process_file(file_name, DEF_FREQ, False)
                 # clip_np = spec_to_image(get_melspectrogram_db(file_name))[np.newaxis, ...]
                 # output = model(torch.from_numpy(clip_np).float()[None, ...].to(device))
-                output = model(p_data[1][None, ...].to(device))
+                # output = model(p_data[1][None, ...].to(device))
                 # arr = sm(output).data.cpu().numpy()
-                arr = torch.exp(output).data.cpu().numpy()
+                # arr = torch.exp(output).data.cpu().numpy()
                 # arr = output.data.cpu().numpy()
                 # print('arr is ')
                 # print(arr)
                 arr = arr[0]
                 result.append(
-                    {"id": "{}".format(p_data[0].split(".")[0]), "A": arr[0][0], "B": arr[0][1],
+                    {"id": "{}".format(target[0]), "A": arr[0][0], "B": arr[0][1],
                      "C": arr[0][2], "D": arr[0][3],
                      "E": arr[0][4],
                      "F": arr[0][5], "G": arr[0][6], "H": arr[0][7],

@@ -27,7 +27,9 @@ def doTrain(model, epoch, train_loader, optimizer, resnet_train_losses):
     model.train()
     for batch_idx, (data, target) in enumerate(train_loader):
         optimizer.zero_grad()
+        data = data.half()
         data = data.to(device)
+        target = target.half()
         target = target.to(device)
         data = data.requires_grad_()  # set requires_grad to True for training
         output = model(data)
@@ -106,6 +108,10 @@ def train(data_folder):
             fc,
             nn.LogSoftmax(dim=-1)
         )
+        net_model.half()  # convert to half precision
+        for layer in net_model.modules():
+            if isinstance(layer, nn.BatchNorm1d):
+                layer.float()
         net_model.to(device)
         print(net_model)
         optimizer = optim.Adam(net_model.parameters(), lr=0.01, weight_decay=0.0001)

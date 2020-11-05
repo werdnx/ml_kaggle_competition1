@@ -4,6 +4,7 @@ import sys
 import numpy as np
 import pandas as pd
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from sklearn.model_selection import KFold
@@ -11,7 +12,7 @@ from tqdm import tqdm
 
 from config import FOLDS, TRAIN_PATH, EPOCHS, MODEL_PATH, BATCH_SIZE_TRAIN, BATCH_SIZE_TEST
 from loss_function import LabelSmoothingCrossEntropy
-from net import Net
+from resnet import resnet_1d_34
 from sampler import SoundDatasetSampler
 from sound_dataset import SoundDataset, sampler_label_callback
 
@@ -83,7 +84,13 @@ def train(data_folder):
                                                    )
         test_loader = torch.utils.data.DataLoader(validation_set, batch_size=BATCH_SIZE_TEST, shuffle=False,
                                                   num_workers=4)
-        net_model = Net()
+        # net_model = Net()
+        net_model = resnet_1d_34(pretrained=True, num_classes=9)
+        net_model.fc = nn.Sequential(
+            nn.Dropout(0.2),
+            *net_model.fc,
+            nn.LogSoftmax(),
+        )
         net_model.to(device)
         print(net_model)
         optimizer = optim.Adam(net_model.parameters(), lr=0.01, weight_decay=0.0001)

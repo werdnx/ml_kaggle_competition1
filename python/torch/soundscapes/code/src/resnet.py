@@ -9,7 +9,7 @@ from utils import load_state_dict_from_url
 __all__ = ['resnet_1d_34', 'resnet50']
 
 model_urls = {
-    'resnet34': 'https://download.pytorch.org/models/resnet34-333f7ec4.pth',
+    'resnet_1d_34': 'https://download.pytorch.org/models/resnet34-333f7ec4.pth',
     'resnet50': 'https://download.pytorch.org/models/resnet50-19c8e357.pth'
 }
 
@@ -173,7 +173,7 @@ class ResNet(nn.Module):
                                        dilate=replace_stride_with_dilation[1])
         self.layer4 = self._make_layer(block, 512, layers[3], stride=2,
                                        dilate=replace_stride_with_dilation[2])
-        self.avgpool = nn.AdaptiveAvgPool1d((1, 1))
+        self.avgpool = nn.AdaptiveAvgPool1d(1)
         self.fc = nn.Linear(512 * block.expansion, num_classes)
 
         for m in self.modules():
@@ -258,7 +258,7 @@ def _resnet(
 
 
 def resnet_1d_34(pretrained: bool = False, progress: bool = True, num_classes: int = 1000, **kwargs: Any) -> ResNet:
-    return _resnet('resnet34', BasicBlock, [3, 4, 6, 3], pretrained, progress, num_classes
+    return _resnet('resnet_1d_34', BasicBlock, [3, 4, 6, 3], pretrained, progress, num_classes,
                    ** kwargs)
 
 

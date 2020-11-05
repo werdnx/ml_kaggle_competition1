@@ -5,7 +5,7 @@ from torch.utils.data import Dataset
 from tqdm import tqdm
 
 # A,B,C,D,E,F,G,H,I
-from config import AUGMENT, PREPROCESS_PATH, DEF_FREQ, TEST_PATH, PREPROCESS_PATH_TEST
+from config import AUGMENT, PREPROCESS_PATH, TEST_PATH, PREPROCESS_PATH_TEST
 from utils import process_sound
 
 CATEGORIES = {'A': 0, 'B': 1, 'C': 2, 'D': 3, 'E': 4, 'F': 5, 'G': 6, 'H': 7, 'I': 8}
@@ -45,7 +45,7 @@ def process_npy_file(path, name):
     path = os.path.join(path, name)
     path = path + '.npy'
     preprocessed = np.load(path)
-    sound_formatted = process_sound(preprocessed, DEF_FREQ, AUGMENT)
+    sound_formatted = process_sound(preprocessed, AUGMENT)
     return sound_formatted
 
 

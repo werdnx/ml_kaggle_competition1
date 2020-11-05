@@ -8,7 +8,7 @@ from tqdm import tqdm
 
 from config import TEST_PATH, FOLDS, MODEL_PATH, PREPROCESS_PATH_TEST
 from sound_dataset import SoundDatasetTest
-from utils import DEF_FREQ, process_sound
+from utils import process_sound
 
 if torch.cuda.is_available():
     device = torch.device('cuda:0')
@@ -22,7 +22,7 @@ def prepare_predict_data(files_to_predict):
         if file[1].split(".")[0] != 'train_ground_truth':
             file_name = PREPROCESS_PATH_TEST + file[1].split(".")[0] + '.npy'
             sound = np.load(file_name)
-            to_predict = process_sound(sound, DEF_FREQ, False)
+            to_predict = process_sound(sound, False)
             result.append({0: file[1], 1: to_predict})
     return result
 
@@ -45,7 +45,7 @@ def test(data_folder, submission_path):
                 output = model(data)
                 arr = torch.exp(output).data.cpu().numpy()
                 # file_name = "{}".format(file[0].split(".")[0]) + '.wav'
-                # to_predict = process_file(file_name, DEF_FREQ, False)
+                # to_predict = process_file(file_name, False)
                 # clip_np = spec_to_image(get_melspectrogram_db(file_name))[np.newaxis, ...]
                 # output = model(torch.from_numpy(clip_np).float()[None, ...].to(device))
                 # output = model(p_data[1][None, ...].to(device))

@@ -29,7 +29,7 @@ def doTrain(model, epoch, train_loader, optimizer, resnet_train_losses):
         optimizer.zero_grad()
         data = data.half()
         data = data.to(device)
-        target = target.half()
+        # target = target.half()
         target = target.to(device)
         data = data.requires_grad_()  # set requires_grad to True for training
         output = model(data)
@@ -55,6 +55,7 @@ def validation(model, test_loader, resnet_valid_losses, epoch):
     trace_yhat = []
     for batch_idx, (data, target) in enumerate(test_loader):
         data = data.to(device)
+        data = data.half()
         target = target.to(device)
         output = model(data)
         trace_y.append(target.cpu().detach().numpy())
@@ -114,7 +115,8 @@ def train(data_folder):
                 layer.float()
         net_model.to(device)
         print(net_model)
-        optimizer = optim.Adam(net_model.parameters(), lr=0.01, weight_decay=0.0001)
+        optimizer = optim.SGD(net_model.parameters(), lr=0.01, momentum=0.9)
+        # optimizer = optim.Adam(net_model.parameters(), lr=0.01, weight_decay=0.0001)
         scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=20, gamma=0.1)
         resnet_train_losses = []
         resnet_valid_losses = []

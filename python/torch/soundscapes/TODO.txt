@@ -27,3 +27,10 @@ handle separators
 1. Model from
 https://keras.io/examples/audio/speaker_recognition_using_cnn/
 2. Half precision
+
+128 мел
+HxW 128x512
+H - число мел бинов
+W - зависит как раз от параметров STFT
+resnet conv2d
+https://pytorch.org/tutorials/beginner/audio_preprocessing_tutorial.html

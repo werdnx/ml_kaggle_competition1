@@ -23,5 +23,7 @@ handle separators
 ./train.sh /data/train/ 1 1
 ./test.sh /data/test/ /wdata/solution.csv 1 1
 
-1. Enable Augmentation
-2. Different nets
+
+1. Model from
+https://keras.io/examples/audio/speaker_recognition_using_cnn/
+2. Half precision

@@ -33,7 +33,7 @@ class SoundDataset(Dataset):
         # format the file path and load the file
         row = self.df.iloc[index]
         # read from preprocessed npy file
-        sound_formatted = process_npy_file(PREPROCESS_PATH, row)
+        sound_formatted = process_npy_file(PREPROCESS_PATH, row[0])
 
         return sound_formatted, self.labels[index]
 

@@ -1,9 +1,10 @@
 import librosa
+import numpy as np
 import torch
 from audiomentations import Compose, AddGaussianNoise, TimeStretch, PitchShift, Shift
 
 # mixer = torchaudio.transforms.DownmixMono()
-from config import DEF_FREQ, SAMPLE_RATE
+from config import DEF_FREQ, SAMPLE_RATE, WINDOW
 
 augment = Compose([
     AddGaussianNoise(min_amplitude=0.001, max_amplitude=0.015, p=0.5),
@@ -12,7 +13,7 @@ augment = Compose([
     Shift(min_fraction=-0.5, max_fraction=0.5, p=0.5),
 ])
 
-CUT_SIZE = 32000 * DEF_FREQ
+CUT_SIZE = WINDOW * DEF_FREQ
 
 
 # Augmentation
@@ -35,15 +36,16 @@ def process_file(file_path, freq=DEF_FREQ, train=True):
     # downsample the audio to ~8kHz
     sound_data = torch.from_numpy(sound_data.reshape((sound_data.shape[0], 1)))
     temp_data = torch.zeros([CUT_SIZE, 1])  # temp_data accounts for audio clips that are too short
-    if sound_data.numel() < CUT_SIZE:
+    if sound_data.numel() <= CUT_SIZE:
         temp_data[:sound_data.numel()] = sound_data[:]
     else:
-        temp_data[:] = sound_data[:CUT_SIZE]
+        rand_index = np.random.randint(0, sound_data.shape[0] - CUT_SIZE)
+        temp_data[:] = sound_data[rand_index:rand_index + CUT_SIZE]
 
     sound_data = temp_data
-    sound_formatted = torch.zeros([32000, 1])
-    # sound_formatted[:32000] = sound_data[::5]  # take every fifth sample of sound_data
-    sound_formatted[:32000] = sound_data[::freq]
+    sound_formatted = torch.zeros([WINDOW, 1])
+    # sound_formatted[:WINDOW] = sound_data[::5]  # take every fifth sample of sound_data
+    sound_formatted[:WINDOW] = sound_data[::freq]
     sound_formatted = sound_formatted.permute(1, 0)
     return sound_formatted
 
@@ -55,14 +57,15 @@ def process_sound(sound_data, freq=DEF_FREQ, train=True):
     # downsample the audio to ~8kHz
     sound_data = torch.from_numpy(sound_data.reshape((sound_data.shape[0], 1)))
     temp_data = torch.zeros([CUT_SIZE, 1])  # temp_data accounts for audio clips that are too short
-    if sound_data.numel() < CUT_SIZE:
+    if sound_data.numel() <= CUT_SIZE:
         temp_data[:sound_data.numel()] = sound_data[:]
     else:
-        temp_data[:] = sound_data[:CUT_SIZE]
+        rand_index = np.random.randint(0, high=(sound_data.numel() - CUT_SIZE))
+        temp_data[:] = sound_data[rand_index:rand_index + CUT_SIZE]
 
     sound_data = temp_data
-    sound_formatted = torch.zeros([32000, 1])
-    # sound_formatted[:32000] = sound_data[::5]  # take every fifth sample of sound_data
-    sound_formatted[:32000] = sound_data[::freq]
+    sound_formatted = torch.zeros([WINDOW, 1])
+    # sound_formatted[:WINDOW] = sound_data[::5]  # take every fifth sample of sound_data
+    sound_formatted[:WINDOW] = sound_data[::freq]
     sound_formatted = sound_formatted.permute(1, 0)
     return sound_formatted

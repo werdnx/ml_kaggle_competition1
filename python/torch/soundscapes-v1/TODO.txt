@@ -30,3 +30,6 @@ handle separators
 4. Extract speech
 5. Model for each class?
 6. Model from kaggle?
+
+bag of words
+

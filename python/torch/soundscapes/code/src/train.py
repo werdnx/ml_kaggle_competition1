@@ -8,7 +8,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from sklearn.model_selection import KFold
-from torchvision.models import resnet34
+from torchvision.models import resnet34, resnet50
 from tqdm import tqdm
 
 from config import FOLDS, TRAIN_PATH, EPOCHS, MODEL_PATH, BATCH_SIZE_TRAIN, BATCH_SIZE_TEST
@@ -132,14 +132,12 @@ def train(data_folder):
         net_model.to(device)
         print(net_model)
         optimizer = optim.SGD(net_model.parameters(), lr=1e-3, momentum=0.9)
-        # optimizer = optim.Adam(net_model.parameters(), lr=0.01, weight_decay=0.0001)
+        # optimizer = optim.Adam(net_model.parameters(), eps=1e-4)
         scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=20, gamma=0.1)
         resnet_train_losses = []
         resnet_valid_losses = []
         best_loss = 100.0
         for epoch in tqdm(range(1, EPOCHS + 1)):
-            if epoch == 31:
-                print("First round of training complete. Setting learn rate to 0.001.")
             doTrain(net_model, epoch, train_loader, optimizer, resnet_train_losses)
             scheduler.step()
             loss = validation(net_model, test_loader, resnet_valid_losses, epoch)

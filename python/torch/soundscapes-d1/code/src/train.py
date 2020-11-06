@@ -8,11 +8,11 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from sklearn.model_selection import KFold
-from torchvision.models import resnet34
 from tqdm import tqdm
 
 from config import FOLDS, TRAIN_PATH, EPOCHS, MODEL_PATH, BATCH_SIZE_TRAIN, BATCH_SIZE_TEST
 from loss_function import LabelSmoothingCrossEntropy
+from resnet import resnet_1d_34
 from sampler import SoundDatasetSampler
 from sound_dataset import SoundDataset, sampler_label_callback
 
@@ -97,18 +97,16 @@ def train(data_folder):
                                                    batch_size=BATCH_SIZE_TRAIN, shuffle=False,
                                                    sampler=SoundDatasetSampler(train_set,
                                                                                callback_get_label=sampler_label_callback),
-                                                   num_workers=1
+                                                   num_workers=4
                                                    )
         test_loader = torch.utils.data.DataLoader(validation_set, batch_size=BATCH_SIZE_TEST, shuffle=False,
-                                                  num_workers=1)
-        # model_ft = models.resnet152(pretrained=True)
-        # num_ftrs = model_ft.fc.in_features
-        # model_ft.fc = nn.Linear(num_ftrs, 120)
-        net_model = resnet34(pretrained=True)
-        num_ftrs = net_model.fc.in_features
+                                                  num_workers=4)
+        # net_model = Net()
+        net_model = resnet_1d_34(pretrained=False, num_classes=9)
+        fc = net_model.fc
         net_model.fc = nn.Sequential(
-            # nn.Dropout(0.2),
-            nn.Linear(num_ftrs, 9),
+            nn.Dropout(0.2),
+            fc,
             nn.LogSoftmax(dim=-1)
         )
         net_model.half()  # convert to half precision

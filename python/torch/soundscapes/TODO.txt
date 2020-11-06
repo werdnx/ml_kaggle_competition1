@@ -34,3 +34,5 @@ H - число мел бинов
 W - зависит как раз от параметров STFT
 resnet conv2d
 https://pytorch.org/tutorials/beginner/audio_preprocessing_tutorial.html
+
+dataset

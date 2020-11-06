@@ -6,8 +6,9 @@ import pandas as pd
 import torch
 from tqdm import tqdm
 
-from audioutils import get_samples_from_file
 from config import TEST_PATH, FOLDS, MODEL_PATH, PREPROCESS_PATH_TEST
+from sound_dataset import SoundDatasetTest
+from utils import process_sound
 
 if torch.cuda.is_available():
     device = torch.device('cuda:0')
@@ -20,50 +21,48 @@ def prepare_predict_data(files_to_predict):
     for file in tqdm(files_to_predict):
         if file[1].split(".")[0] != 'train_ground_truth':
             file_name = PREPROCESS_PATH_TEST + file[1].split(".")[0] + '.npy'
-            crops = get_samples_from_file(file_name)
-            result.append({0: file[1], 1: crops})
+            sound = np.load(file_name)
+            to_predict = process_sound(sound, False)
+            result.append({0: file[1], 1: to_predict})
     return result
 
 
 def test(data_folder, submission_path):
     files_to_predict = [(os.path.join(TEST_PATH, i), i) for i in os.listdir(data_folder)]
     dfs = []
-    predict_data = prepare_predict_data(files_to_predict)
+    # predict_data = prepare_predict_data(files_to_predict)
     # sm = torch.nn.Softmax(dim=1)
-    # train_set = SoundDatasetTest(data_folder)
-    # test_loader = torch.utils.data.DataLoader(train_set, batch_size=1, shuffle=False, num_workers=4)
+    train_set = SoundDatasetTest(data_folder)
+    test_loader = torch.utils.data.DataLoader(train_set, batch_size=1, shuffle=False, num_workers=4)
     for fold in tqdm(np.arange(FOLDS)):
         print('process fold ' + str(fold))
         model = torch.load(MODEL_PATH + '_fold' + str(fold))
         model.eval()
         result = []
-        probs = []
-        for crops_data in tqdm(predict_data):
-            for crop in crops_data[1]:
-                crop = crop.to(device)
-                output = model(crop)
+        for data, target in tqdm(test_loader):
+            if data is not None:
+                data = data.to(device)
+                output = model(data)
                 arr = torch.exp(output).data.cpu().numpy()
-                probs = np.add(probs, arr[0])
-                print('probs:')
-                print(probs)
-            probs = probs / float(len(crops_data[1]))
-            # file_name = "{}".format(file[0].split(".")[0]) + '.wav'
-            # to_predict = process_file(file_name, False)
-            # clip_np = spec_to_image(get_melspectrogram_db(file_name))[np.newaxis, ...]
-            # output = model(torch.from_numpy(clip_np).float()[None, ...].to(device))
-            # output = model(p_data[1][None, ...].to(device))
-            # arr = sm(output).data.cpu().numpy()
-            # arr = torch.exp(output).data.cpu().numpy()
-            # arr = output.data.cpu().numpy()
-            # print('arr is ')
-            # print(arr)
-            # arr = arr[0]
-            result.append(
-                {"id": "{}".format(crops_data[0]), "A": probs[0][0], "B": probs[0][1],
-                 "C": probs[0][2], "D": probs[0][3],
-                 "E": probs[0][4],
-                 "F": probs[0][5], "G": probs[0][6], "H": probs[0][7],
-                 "I": probs[0][8]})
+                # file_name = "{}".format(file[0].split(".")[0]) + '.wav'
+                # to_predict = process_file(file_name, False)
+                # clip_np = spec_to_image(get_melspectrogram_db(file_name))[np.newaxis, ...]
+                # output = model(torch.from_numpy(clip_np).float()[None, ...].to(device))
+                # output = model(p_data[1][None, ...].to(device))
+                # arr = sm(output).data.cpu().numpy()
+                # arr = torch.exp(output).data.cpu().numpy()
+                # arr = output.data.cpu().numpy()
+                # print('arr is ')
+                # print(arr)
+                arr = arr[0]
+                result.append(
+                    {"id": "{}".format(target[0]), "A": arr[0][0], "B": arr[0][1],
+                     "C": arr[0][2], "D": arr[0][3],
+                     "E": arr[0][4],
+                     "F": arr[0][5], "G": arr[0][6], "H": arr[0][7],
+                     "I": arr[0][8]})
+            else:
+                print("skip train_ground_truth")
         dfs.append(pd.DataFrame(result))
 
     # result_df = pd.DataFrame(result)

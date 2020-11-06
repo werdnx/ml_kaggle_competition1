@@ -41,6 +41,7 @@ def test(data_folder, submission_path):
         result = []
         for data, target in tqdm(test_loader):
             if data is not None:
+                data = data.half()
                 data = data.to(device)
                 output = model(data)
                 arr = torch.exp(output).data.cpu().numpy()
@@ -54,7 +55,7 @@ def test(data_folder, submission_path):
                 # arr = output.data.cpu().numpy()
                 # print('arr is ')
                 # print(arr)
-                arr = arr[0]
+                # arr = arr[0]
                 result.append(
                     {"id": "{}".format(target[0]), "A": arr[0][0], "B": arr[0][1],
                      "C": arr[0][2], "D": arr[0][3],

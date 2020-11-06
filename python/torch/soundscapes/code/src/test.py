@@ -1,3 +1,4 @@
+import math
 import os
 import sys
 
@@ -6,7 +7,6 @@ import pandas as pd
 import torch
 from tqdm import tqdm
 
-from audioutils import get_samples_from_file
 from config import TEST_PATH, FOLDS, MODEL_PATH, PREPROCESS_PATH_TEST
 
 if torch.cuda.is_available():
@@ -21,6 +21,7 @@ def prepare_predict_data(files_to_predict):
         if file[1].split(".")[0] != 'train_ground_truth':
             file_name = PREPROCESS_PATH_TEST + file[1].split(".")[0] + '.npy'
             crops = get_samples_from_file(file_name)
+            # crops = get_one_sample_from_file(file_name)
             result.append({0: file[1], 1: crops})
     return result
 
@@ -37,16 +38,24 @@ def test(data_folder, submission_path):
         model = torch.load(MODEL_PATH + '_fold' + str(fold))
         model.eval()
         result = []
-        probs = []
         for crops_data in tqdm(predict_data):
+            probs = np.zeros(9)
             for crop in crops_data[1]:
+                crop = crop[np.newaxis, ...]
+                crop = crop[None, ...]
+                crop = crop.half()
                 crop = crop.to(device)
                 output = model(crop)
+                # arr = output.data.cpu().numpy()
                 arr = torch.exp(output).data.cpu().numpy()
+                arr[0] = [round_decimals_down(x) for x in arr[0]]
                 probs = np.add(probs, arr[0])
-                print('probs:')
-                print(probs)
+                # print('probs:')
+                # print(probs)
+            # print('probs ')
+            # print(probs)
             probs = probs / float(len(crops_data[1]))
+            probs = [min(x, 0.99) for x in probs]
             # file_name = "{}".format(file[0].split(".")[0]) + '.wav'
             # to_predict = process_file(file_name, False)
             # clip_np = spec_to_image(get_melspectrogram_db(file_name))[np.newaxis, ...]
@@ -59,11 +68,11 @@ def test(data_folder, submission_path):
             # print(arr)
             # arr = arr[0]
             result.append(
-                {"id": "{}".format(crops_data[0]), "A": probs[0][0], "B": probs[0][1],
-                 "C": probs[0][2], "D": probs[0][3],
-                 "E": probs[0][4],
-                 "F": probs[0][5], "G": probs[0][6], "H": probs[0][7],
-                 "I": probs[0][8]})
+                {"id": "{}".format(crops_data[0].split(".")[0]), "A": probs[0], "B": probs[1],
+                 "C": probs[2], "D": probs[3],
+                 "E": probs[4],
+                 "F": probs[5], "G": probs[6], "H": probs[7],
+                 "I": probs[8]})
         dfs.append(pd.DataFrame(result))
 
     # result_df = pd.DataFrame(result)
@@ -100,6 +109,21 @@ def test(data_folder, submission_path):
     print('res df norm')
     print(result_df.head())
     result_df.to_csv(submission_path, header=True, index=False, float_format='%.2f')
+
+
+def round_decimals_down(number: float, decimals: int = 2):
+    """
+    Returns a value rounded down to a specific number of decimal places.
+    """
+    if not isinstance(decimals, int):
+        raise TypeError("decimal places must be an integer")
+    elif decimals < 0:
+        raise ValueError("decimal places has to be 0 or more")
+    elif decimals == 0:
+        return math.floor(number)
+
+    factor = 10 ** decimals
+    return math.floor(number * factor) / factor
 
 
 def main():

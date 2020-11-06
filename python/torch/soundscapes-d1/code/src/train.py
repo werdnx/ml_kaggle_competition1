@@ -107,7 +107,7 @@ def train(data_folder):
         net_model.fc = nn.Sequential(
             nn.Dropout(0.2),
             fc,
-            nn.LogSoftmax(dim=-1)
+            nn.Softmax(dim=-1)
         )
         net_model.half()  # convert to half precision
         for layer in net_model.modules():

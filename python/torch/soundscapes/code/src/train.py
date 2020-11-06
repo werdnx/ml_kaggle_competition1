@@ -14,7 +14,8 @@ from tqdm import tqdm
 from config import FOLDS, TRAIN_PATH, EPOCHS, MODEL_PATH, BATCH_SIZE_TRAIN, BATCH_SIZE_TEST
 from loss_function import LabelSmoothingCrossEntropy
 from sampler import SoundDatasetSampler
-from sound_dataset import SoundDataset, sampler_label_callback
+from sound_dataset import sampler_label_callback, SoundDatasetTest, SoundDataset
+from sound_dataset_random import SoundDatasetRandom
 
 if torch.cuda.is_available():
     device = torch.device('cuda:0')
@@ -53,11 +54,18 @@ def validation(model, test_loader, resnet_valid_losses, epoch):
     batch_losses = []
     trace_y = []
     trace_yhat = []
-    for batch_idx, (data, target) in enumerate(test_loader):
-        data = data.to(device)
-        data = data.half()
+    for batch_idx, (crops_batches, target) in enumerate(test_loader):
         target = target.to(device)
-        output = model(data)
+
+        # for crops in crops_batches:
+        #     crops = crops.half()
+        #     crops = crops.to(device)
+        #     output = model(crops)
+        #     output = output.sum(0) / float(len(crops))
+
+        crops_batches = crops_batches.half()
+        crops_batches = crops_batches.to(device)
+        output = model(crops_batches)
         trace_y.append(target.cpu().detach().numpy())
         trace_yhat.append(output.cpu().detach().numpy())
         # output = output.permute(1, 0, 2)
@@ -69,6 +77,8 @@ def validation(model, test_loader, resnet_valid_losses, epoch):
     trace_yhat = np.concatenate(trace_yhat)
     accuracy = np.mean(trace_yhat.argmax(axis=1) == trace_y)
     print(f'Epoch - {epoch} Valid-Loss : {np.mean(resnet_valid_losses[-1])} Valid-Accuracy : {accuracy}')
+
+    return np.mean(resnet_valid_losses[-1])
     # pred = output.max(2)[1]  # get the index of the max log-probability
     # correct += pred.eq(target).cpu().sum().item()
     # if batch_idx % 10 == 0:
@@ -80,14 +90,17 @@ def validation(model, test_loader, resnet_valid_losses, epoch):
 
 def train(data_folder):
     df = pd.read_csv(os.path.join(data_folder, 'train_ground_truth.csv'), dtype={0: str, 1: str})
-
     skf = KFold(n_splits=FOLDS, shuffle=True, random_state=42)
     for fold, (idxT, idxV) in enumerate(skf.split(np.arange(len(df)))):
         # msk = np.random.rand(len(df)) < 0.7
         train_df = df[df.index.isin(idxT)]
         valid_df = df[df.index.isin(idxV)]
 
-        train_set = SoundDataset(TRAIN_PATH, train_df)
+        # TODO remove fo debug purpose
+        # train_df = train_df[:100]
+        # valid_df = valid_df[:100]
+
+        train_set = SoundDatasetRandom(TRAIN_PATH, train_df)
         validation_set = SoundDataset(TRAIN_PATH, valid_df)
         print('fold ' + str(fold))
         print("Train set size: " + str(len(train_set)))
@@ -97,17 +110,18 @@ def train(data_folder):
                                                    batch_size=BATCH_SIZE_TRAIN, shuffle=False,
                                                    sampler=SoundDatasetSampler(train_set,
                                                                                callback_get_label=sampler_label_callback),
-                                                   num_workers=1
+                                                   num_workers=4
                                                    )
         test_loader = torch.utils.data.DataLoader(validation_set, batch_size=BATCH_SIZE_TEST, shuffle=False,
-                                                  num_workers=1)
+                                                  num_workers=4)
         # model_ft = models.resnet152(pretrained=True)
         # num_ftrs = model_ft.fc.in_features
         # model_ft.fc = nn.Linear(num_ftrs, 120)
         net_model = resnet34(pretrained=True)
+        net_model.conv1 = nn.Conv2d(1, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
         num_ftrs = net_model.fc.in_features
         net_model.fc = nn.Sequential(
-            # nn.Dropout(0.2),
+            nn.Dropout(0.2),
             nn.Linear(num_ftrs, 9),
             nn.LogSoftmax(dim=-1)
         )
@@ -117,19 +131,24 @@ def train(data_folder):
                 layer.float()
         net_model.to(device)
         print(net_model)
-        optimizer = optim.SGD(net_model.parameters(), lr=0.01, momentum=0.9)
+        optimizer = optim.SGD(net_model.parameters(), lr=1e-3, momentum=0.9)
         # optimizer = optim.Adam(net_model.parameters(), lr=0.01, weight_decay=0.0001)
         scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=20, gamma=0.1)
         resnet_train_losses = []
         resnet_valid_losses = []
+        best_loss = 100.0
         for epoch in tqdm(range(1, EPOCHS + 1)):
             if epoch == 31:
                 print("First round of training complete. Setting learn rate to 0.001.")
             doTrain(net_model, epoch, train_loader, optimizer, resnet_train_losses)
             scheduler.step()
-            validation(net_model, test_loader, resnet_valid_losses, epoch)
+            loss = validation(net_model, test_loader, resnet_valid_losses, epoch)
+            if loss < best_loss:
+                print('save best model')
+                torch.save(net_model, MODEL_PATH + '_fold' + str(fold))
+                best_loss = loss
 
-        torch.save(net_model, MODEL_PATH + '_fold' + str(fold))
+        # torch.save(net_model, MODEL_PATH + '_fold' + str(fold))
 
 
 def main():

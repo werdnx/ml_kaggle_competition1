@@ -1,6 +1,7 @@
 import librosa
 import numpy as np
 import torch
+
 from config import SAMPLE_RATE
 
 
@@ -28,7 +29,7 @@ def get_melspectrogram_db(file_path, sr=None, n_fft=2048, hop_length=512, n_mels
 
 def get_samples_from_file(npy_file_path, n_fft=2048, hop_length=512, n_mels=128, fmin=20, fmax=8300):
     wave = np.load(npy_file_path)
-    sample_length = 5 * wave
+    sample_length = 5 * SAMPLE_RATE
     result = []
     for idx in range(0, len(wave), sample_length):
         cropped_wave = wave[idx:idx + sample_length]
@@ -38,4 +39,23 @@ def get_samples_from_file(npy_file_path, n_fft=2048, hop_length=512, n_mels=128,
         spec = librosa.feature.melspectrogram(cropped_wave, sr=SAMPLE_RATE, n_fft=n_fft,
                                               hop_length=hop_length, n_mels=n_mels, fmin=fmin, fmax=fmax)
         result.append(torch.from_numpy(spec))
+    return result
+
+
+def get_random_sample_from_file(npy_file_path, n_fft=2048, hop_length=512, n_mels=128, fmin=20, fmax=8300):
+    wave = np.load(npy_file_path)
+    sample_length = 5 * SAMPLE_RATE
+    rand_index = np.random.randint(0, high=(len(wave) - sample_length))
+    cropped_wave = wave[rand_index:rand_index + sample_length]
+    spec = librosa.feature.melspectrogram(cropped_wave, sr=SAMPLE_RATE, n_fft=n_fft,
+                                          hop_length=hop_length, n_mels=n_mels, fmin=fmin, fmax=fmax)
+    return torch.from_numpy(spec)
+
+
+def get_one_sample_from_file(npy_file_path, n_fft=2048, hop_length=512, n_mels=128, fmin=20, fmax=8300):
+    wave = np.load(npy_file_path)
+
+    spec = librosa.feature.melspectrogram(wave, sr=SAMPLE_RATE, n_fft=n_fft,
+                                          hop_length=hop_length, n_mels=n_mels, fmin=fmin, fmax=fmax)
+    return torch.from_numpy(spec)
     return result

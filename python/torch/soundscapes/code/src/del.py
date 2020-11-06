@@ -1,15 +1,18 @@
+import librosa
 import numpy as np
+
+from audioutils import get_one_sample_from_file, get_samples_from_file
 
 
 def main():
-    probs = np.zeros(5)
-    a1 = [0.2, 0.3, 0.4, 0.1, 0.2]
-    a2 = [0.2, 0.3, 0.4, 0.1, 0.2]
-    probs = np.add(probs, a1)
-    probs = np.add(probs, a2)
-    probs = probs / 2.0
-    print(probs)
-    print(np.mean(probs))
+    # probs = np.zeros(5)
+    # a1 = [0.2, 0.3, 0.4, 0.1, 0.2]
+    # a2 = [0.2, 0.3, 0.4, 0.1, 0.2]
+    # probs = np.add(probs, a1)
+    # probs = np.add(probs, a2)
+    # probs = probs / 2.0
+    # print(probs)
+    # print(np.mean(probs))
     # dfs = []
     # for f in np.arange(5):
     #     result = []
@@ -45,6 +48,13 @@ def main():
     # f = process_file('/Users/dmitrenkoandrey/PycharmProjects/ml_kaggle_competition1/temp/1765711516.wav')
     # print(f)
     # f = spec_to_image(get_melspectrogram_db(file_path))
+    sound, r = librosa.load('/Users/dmitrenkoandrey/PycharmProjects/ml_kaggle_competition1/temp/1765711516.wav',
+                            sr=16000, mono=True)
+    sound = librosa.util.normalize(sound, axis=0)
+    np.save('/Users/dmitrenkoandrey/PycharmProjects/ml_kaggle_competition1/temp/s1.npy',sound)
+    f1 = get_one_sample_from_file('/Users/dmitrenkoandrey/PycharmProjects/ml_kaggle_competition1/temp/s1.npy')
+    f2 = get_samples_from_file('/Users/dmitrenkoandrey/PycharmProjects/ml_kaggle_competition1/temp/s1.npy')
+    print('done')
 
 
 if __name__ == "__main__":

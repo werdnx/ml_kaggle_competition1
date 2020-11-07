@@ -7,12 +7,11 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
+from efficientnet_pytorch import EfficientNet
 from sklearn.model_selection import train_test_split
-from torchvision.models import resnet34
 from tqdm import tqdm
 
-from config import TRAIN_PATH, EPOCHS, MODEL_PATH, BATCH_SIZE_TRAIN, BATCH_SIZE_TEST, MODEL_PARAMS
-from loss_function import LabelSmoothingCrossEntropy
+from config import TRAIN_PATH, MODEL_PATH, MODEL_PARAMS
 from sampler import SoundDatasetSampler
 from sound_dataset import sampler_label_callback, SoundDataset
 from sound_dataset_random import SoundDatasetRandom
@@ -24,8 +23,9 @@ else:
 
 
 def doTrain(model, epoch, train_loader, optimizer, resnet_train_losses):
-    loss_f = LabelSmoothingCrossEntropy()
+    # loss_f = LabelSmoothingCrossEntropy()
     model.train()
+    batch_losses = []
     for batch_idx, (data, target) in enumerate(train_loader):
         optimizer.zero_grad()
         data = data.half()
@@ -36,21 +36,23 @@ def doTrain(model, epoch, train_loader, optimizer, resnet_train_losses):
         output = model(data)
         # output = output.permute(1, 0, 2)  # original output dimensions are batchSizex1x10
         loss = F.nll_loss(output, target)  # the loss functions expects a batchSizex10 input
-        resnet_train_losses.append(loss.item())
+        batch_losses.append(loss.item())
         # loss = loss_f(output[0], target)
         # loss = log_loss(output[0], target)
         loss.backward()
         optimizer.step()
+
         if batch_idx % 10 == 0:  # print training stats
             print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
                 epoch, batch_idx * len(data), len(train_loader.dataset),
                        100. * batch_idx / len(train_loader), loss))
+    resnet_train_losses.append(batch_losses)
     print(f'Epoch - {epoch} Train-Loss : {np.mean(resnet_train_losses[-1])}')
 
 
 def validation(model, test_loader, resnet_valid_losses, epoch):
     model.eval()
-    correct = 0
+    # correct = 0
     batch_losses = []
     trace_y = []
     trace_yhat = []
@@ -70,13 +72,13 @@ def validation(model, test_loader, resnet_valid_losses, epoch):
         trace_yhat.append(output.cpu().detach().numpy())
         # output = output.permute(1, 0, 2)
         loss = F.nll_loss(output, target)
-        resnet_valid_losses.append(loss.item())
         batch_losses.append(loss.item())
         if batch_idx % 10 == 0:  # print training stats
             print('Validation Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
                 epoch, batch_idx * len(crops_batches), len(test_loader.dataset),
                        100. * batch_idx / len(test_loader), loss))
 
+    resnet_valid_losses.append(batch_losses)
     trace_y = np.concatenate(trace_y)
     trace_yhat = np.concatenate(trace_yhat)
     accuracy = np.mean(trace_yhat.argmax(axis=1) == trace_y)
@@ -90,6 +92,11 @@ def validation(model, test_loader, resnet_valid_losses, epoch):
     # print('\nTest set: Accuracy: {}/{} ({:.0f}%)\n'.format(
     #     correct, len(test_loader.dataset),
     #     100. * correct / len(test_loader.dataset)))
+
+
+def print_loss(resnet_train_losses):
+    for loss in resnet_train_losses:
+        print(f'\t {np.mean(loss)}')
 
 
 def train(data_folder):
@@ -118,21 +125,22 @@ def train(data_folder):
         print("Test set size: " + str(len(validation_set)))
 
         train_loader = torch.utils.data.DataLoader(train_set,
-                                                   batch_size=BATCH_SIZE_TRAIN, shuffle=False,
+                                                   batch_size=model_param['TRAIN_BATCH'], shuffle=False,
                                                    sampler=SoundDatasetSampler(train_set,
                                                                                callback_get_label=sampler_label_callback),
                                                    num_workers=4
                                                    )
-        test_loader = torch.utils.data.DataLoader(validation_set, batch_size=BATCH_SIZE_TEST, shuffle=False,
+        test_loader = torch.utils.data.DataLoader(validation_set, batch_size=model_param['VALID_BATCH'], shuffle=False,
                                                   num_workers=4)
         # model_ft = models.resnet152(pretrained=True)
         # num_ftrs = model_ft.fc.in_features
         # model_ft.fc = nn.Linear(num_ftrs, 120)
-        net_model = resnet34(pretrained=True)
-        net_model.conv1 = nn.Conv2d(1, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
-        num_ftrs = net_model.fc.in_features
-        net_model.fc = nn.Sequential(
-            nn.Dropout(0.2),
+        net_model = EfficientNet.from_pretrained(model_param['TYPE'], in_channels=1)
+        # net_model = resnet34(pretrained=True)
+        # net_model.conv1 = nn.Conv2d(1, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
+        num_ftrs = net_model._fc.in_features
+        net_model._fc = nn.Sequential(
+            # nn.Dropout(DROPOUT),
             nn.Linear(num_ftrs, 9),
             nn.LogSoftmax(dim=-1)
         )
@@ -148,15 +156,18 @@ def train(data_folder):
         resnet_train_losses = []
         resnet_valid_losses = []
         best_loss = 100.0
-        for epoch in tqdm(range(1, EPOCHS + 1)):
+        for epoch in tqdm(range(1, model_param['EPOCHS'] + 1)):
             doTrain(net_model, epoch, train_loader, optimizer, resnet_train_losses)
             scheduler.step()
             loss = validation(net_model, test_loader, resnet_valid_losses, epoch)
             if loss < best_loss:
-                print('save best model')
+                print('!!!!!!!!!save best model ' + model_param['NAME'])
                 torch.save(net_model, MODEL_PATH + '_' + model_param['NAME'])
                 best_loss = loss
-
+        print('train losses stat:')
+        print_loss(resnet_train_losses)
+        print('validation losses stat:')
+        print_loss(resnet_valid_losses)
         # torch.save(net_model, MODEL_PATH + '_fold' + str(fold))
 
 

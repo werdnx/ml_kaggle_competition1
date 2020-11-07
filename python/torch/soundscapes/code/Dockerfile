@@ -10,6 +10,7 @@ RUN apt-get install -y ffmpeg
 RUN pip install noisereduce
 RUN pip install albumentations
 RUN pip install audiomentations
+RUN pip install efficientnet_pytorch
 #RUN pip install torchaudio
 RUN mkdir /work
 COPY . /work

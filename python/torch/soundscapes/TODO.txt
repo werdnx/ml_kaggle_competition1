@@ -29,8 +29,4 @@ https://keras.io/examples/audio/speaker_recognition_using_cnn/
 2. Half precision +
 
 
-DROPOUT?
-early stoping?
-smooth labeling?
-spectogram from whole file? - diff size
-Concat spectograms?
+augmentation + whole file

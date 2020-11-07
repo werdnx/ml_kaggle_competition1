@@ -7,14 +7,14 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-from sklearn.model_selection import KFold
-from torchvision.models import resnet34, resnet50
+from sklearn.model_selection import train_test_split
+from torchvision.models import resnet34
 from tqdm import tqdm
 
-from config import FOLDS, TRAIN_PATH, EPOCHS, MODEL_PATH, BATCH_SIZE_TRAIN, BATCH_SIZE_TEST
+from config import TRAIN_PATH, EPOCHS, MODEL_PATH, BATCH_SIZE_TRAIN, BATCH_SIZE_TEST, MODEL_PARAMS
 from loss_function import LabelSmoothingCrossEntropy
 from sampler import SoundDatasetSampler
-from sound_dataset import sampler_label_callback, SoundDatasetTest, SoundDataset
+from sound_dataset import sampler_label_callback, SoundDataset
 from sound_dataset_random import SoundDatasetRandom
 
 if torch.cuda.is_available():
@@ -72,6 +72,10 @@ def validation(model, test_loader, resnet_valid_losses, epoch):
         loss = F.nll_loss(output, target)
         resnet_valid_losses.append(loss.item())
         batch_losses.append(loss.item())
+        if batch_idx % 10 == 0:  # print training stats
+            print('Validation Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
+                epoch, batch_idx * len(crops_batches), len(test_loader.dataset),
+                       100. * batch_idx / len(test_loader), loss))
 
     trace_y = np.concatenate(trace_y)
     trace_yhat = np.concatenate(trace_yhat)
@@ -90,19 +94,26 @@ def validation(model, test_loader, resnet_valid_losses, epoch):
 
 def train(data_folder):
     df = pd.read_csv(os.path.join(data_folder, 'train_ground_truth.csv'), dtype={0: str, 1: str})
-    skf = KFold(n_splits=FOLDS, shuffle=True, random_state=42)
-    for fold, (idxT, idxV) in enumerate(skf.split(np.arange(len(df)))):
+
+    # skf = KFold(n_splits=FOLDS, shuffle=True, random_state=42)
+    # for fold, (idxT, idxV) in enumerate(skf.split(np.arange(len(df)))):
+    for model_param in MODEL_PARAMS:
+        df = df.sample(frac=1).reset_index(drop=True)
+        train_df, valid_df = train_test_split(df, test_size=0.2)
         # msk = np.random.rand(len(df)) < 0.7
-        train_df = df[df.index.isin(idxT)]
-        valid_df = df[df.index.isin(idxV)]
+        # train_df = df[msk]
+        # valid_df = df[~msk]
+
+        # train_df = df[df.index.isin(idxT)]
+        # valid_df = df[df.index.isin(idxV)]
 
         # TODO remove fo debug purpose
         # train_df = train_df[:100]
         # valid_df = valid_df[:100]
 
-        train_set = SoundDatasetRandom(TRAIN_PATH, train_df)
-        validation_set = SoundDataset(TRAIN_PATH, valid_df)
-        print('fold ' + str(fold))
+        train_set = SoundDatasetRandom(TRAIN_PATH, train_df, model_param)
+        validation_set = SoundDataset(TRAIN_PATH, valid_df, model_param)
+        print('model: ' + str(model_param['NAME']))
         print("Train set size: " + str(len(train_set)))
         print("Test set size: " + str(len(validation_set)))
 
@@ -143,7 +154,7 @@ def train(data_folder):
             loss = validation(net_model, test_loader, resnet_valid_losses, epoch)
             if loss < best_loss:
                 print('save best model')
-                torch.save(net_model, MODEL_PATH + '_fold' + str(fold))
+                torch.save(net_model, MODEL_PATH + '_' + model_param['NAME'])
                 best_loss = loss
 
         # torch.save(net_model, MODEL_PATH + '_fold' + str(fold))

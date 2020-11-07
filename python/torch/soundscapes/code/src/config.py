@@ -8,6 +8,12 @@ AUGMENT = False
 FOLDS = 3
 EPOCHS = 50
 BATCH_SIZE_TRAIN = 128
-BATCH_SIZE_TEST = 64
+BATCH_SIZE_TEST = 128
 WINDOW = 180000
-SECONDS = 5
+# SECONDS = 1
+
+MODEL_PARAMS = [{'NAME': '10_sec', 'SECONDS': 10},
+                {'NAME': '7_sec', 'SECONDS': 7},
+                {'NAME': '5_sec', 'SECONDS': 5},
+                {'NAME': '3_sec', 'SECONDS': 3},
+                {'NAME': '1_sec', 'SECONDS': 1}]

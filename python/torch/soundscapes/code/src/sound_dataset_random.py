@@ -1,8 +1,8 @@
 import os
 
+import numpy as np
 from torch.utils.data import Dataset
 from tqdm import tqdm
-import numpy as np
 
 # A,B,C,D,E,F,G,H,I
 from audioutils import get_random_sample_from_file
@@ -12,8 +12,9 @@ CATEGORIES = {'A': 0, 'B': 1, 'C': 2, 'D': 3, 'E': 4, 'F': 5, 'G': 6, 'H': 7, 'I
 
 
 class SoundDatasetRandom(Dataset):
-    def __init__(self, base, df):
+    def __init__(self, base, df, model_params):
         self.df = df
+        self.model_params = model_params
         self.base = base
         self.labels = []
         for ind in tqdm(range(len(df))):
@@ -24,7 +25,7 @@ class SoundDatasetRandom(Dataset):
         # format the file path and load the file
         row = self.df.iloc[index]
         # read from preprocessed npy file
-        sound_formatted = process_npy_file(PREPROCESS_PATH, row[0])
+        sound_formatted = process_npy_file(PREPROCESS_PATH, row[0], self.model_params['SECONDS'])
 
         return sound_formatted[np.newaxis, ...], self.labels[index]
 
@@ -32,10 +33,10 @@ class SoundDatasetRandom(Dataset):
         return len(self.df)
 
 
-def process_npy_file(path, name):
+def process_npy_file(path, name, seconds):
     path = os.path.join(path, name)
     path = path + '.npy'
-    crops = get_random_sample_from_file(path)
+    crops = get_random_sample_from_file(path, seconds)
     # crops = get_one_sample_from_file(path)
     return crops
 

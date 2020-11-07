@@ -2,7 +2,7 @@ import librosa
 import numpy as np
 import torch
 
-from config import SAMPLE_RATE, SECONDS
+from config import SAMPLE_RATE
 
 
 def spec_to_image(spec, eps=1e-6):
@@ -27,24 +27,25 @@ def get_melspectrogram_db(file_path, sr=None, n_fft=2048, hop_length=512, n_mels
     return spec_db
 
 
-def get_samples_from_file(npy_file_path, n_fft=2048, hop_length=512, n_mels=128, fmin=20, fmax=8300):
+def get_samples_from_file(npy_file_path, seconds, n_fft=2048, hop_length=512, n_mels=128):
     wave = np.load(npy_file_path)
-    sample_length = SECONDS * SAMPLE_RATE
+    sample_length = seconds * SAMPLE_RATE
     result = []
     for idx in range(0, len(wave), sample_length):
         cropped_wave = wave[idx:idx + sample_length]
         if len(cropped_wave) < sample_length:
-            cropped_wave = np.pad(cropped_wave, int(np.ceil((SECONDS * SAMPLE_RATE - cropped_wave.shape[0]) / 2)),
-                                  mode='reflect')
+            break
+            # cropped_wave = np.pad(cropped_wave, int(np.ceil((seconds * SAMPLE_RATE - cropped_wave.shape[0]) / 2)),
+            #                       mode='reflect')
         spec = librosa.feature.melspectrogram(cropped_wave, sr=SAMPLE_RATE, n_fft=n_fft,
-                                              hop_length=hop_length, n_mels=n_mels, fmin=fmin, fmax=fmax)
+                                              hop_length=hop_length, n_mels=n_mels)
         result.append(torch.from_numpy(spec))
     return result
 
 
-def get_random_sample_from_file(npy_file_path, n_fft=2048, hop_length=512, n_mels=128, fmin=20, fmax=8300):
+def get_random_sample_from_file(npy_file_path, seconds, n_fft=2048, hop_length=512, n_mels=128, fmin=20, fmax=8300):
     wave = np.load(npy_file_path)
-    sample_length = SECONDS * SAMPLE_RATE
+    sample_length = seconds * SAMPLE_RATE
     if len(wave) < sample_length:
         print('short audio')
         print(len(wave))

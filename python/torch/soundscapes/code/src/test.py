@@ -7,7 +7,8 @@ import pandas as pd
 import torch
 from tqdm import tqdm
 
-from config import TEST_PATH, FOLDS, MODEL_PATH, PREPROCESS_PATH_TEST
+from audioutils import get_samples_from_file
+from config import TEST_PATH, MODEL_PATH, PREPROCESS_PATH_TEST, MODEL_PARAMS
 
 if torch.cuda.is_available():
     device = torch.device('cuda:0')
@@ -15,12 +16,12 @@ else:
     device = torch.device('cpu')
 
 
-def prepare_predict_data(files_to_predict):
+def prepare_predict_data(files_to_predict, seconds):
     result = []
     for file in tqdm(files_to_predict):
         if file[1].split(".")[0] != 'train_ground_truth':
             file_name = PREPROCESS_PATH_TEST + file[1].split(".")[0] + '.npy'
-            crops = get_samples_from_file(file_name)
+            crops = get_samples_from_file(file_name, seconds)
             # crops = get_one_sample_from_file(file_name)
             result.append({0: file[1], 1: crops})
     return result
@@ -29,13 +30,14 @@ def prepare_predict_data(files_to_predict):
 def test(data_folder, submission_path):
     files_to_predict = [(os.path.join(TEST_PATH, i), i) for i in os.listdir(data_folder)]
     dfs = []
-    predict_data = prepare_predict_data(files_to_predict)
-    # sm = torch.nn.Softmax(dim=1)
-    # train_set = SoundDatasetTest(data_folder)
-    # test_loader = torch.utils.data.DataLoader(train_set, batch_size=1, shuffle=False, num_workers=4)
-    for fold in tqdm(np.arange(FOLDS)):
-        print('process fold ' + str(fold))
-        model = torch.load(MODEL_PATH + '_fold' + str(fold))
+    for model_param in MODEL_PARAMS:
+        predict_data = prepare_predict_data(files_to_predict, model_param['SECONDS'])
+        # sm = torch.nn.Softmax(dim=1)
+        # train_set = SoundDatasetTest(data_folder)
+        # test_loader = torch.utils.data.DataLoader(train_set, batch_size=1, shuffle=False, num_workers=4)
+        # for fold in tqdm(np.arange(FOLDS)):
+        print('process model ' + model_param['NAME'])
+        model = torch.load(MODEL_PATH + '_' + model_param['NAME'])
         model.eval()
         result = []
         for crops_data in tqdm(predict_data):
@@ -48,14 +50,14 @@ def test(data_folder, submission_path):
                 output = model(crop)
                 # arr = output.data.cpu().numpy()
                 arr = torch.exp(output).data.cpu().numpy()
-                arr[0] = [round_decimals_down(x) for x in arr[0]]
+                # arr[0] = [round_decimals_down(x) for x in arr[0]]
                 probs = np.add(probs, arr[0])
                 # print('probs:')
                 # print(probs)
             # print('probs ')
             # print(probs)
             probs = probs / float(len(crops_data[1]))
-            probs = [min(x, 0.99) for x in probs]
+            # probs = [min(x, 0.99) for x in probs]
             # file_name = "{}".format(file[0].split(".")[0]) + '.wav'
             # to_predict = process_file(file_name, False)
             # clip_np = spec_to_image(get_melspectrogram_db(file_name))[np.newaxis, ...]

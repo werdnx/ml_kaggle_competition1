@@ -12,14 +12,15 @@ CATEGORIES = {'A': 0, 'B': 1, 'C': 2, 'D': 3, 'E': 4, 'F': 5, 'G': 6, 'H': 7, 'I
 
 
 class SoundDataset(Dataset):
-    def __init__(self, base, df):
+    def __init__(self, base, df, model_param):
         self.base = base
+        self.model_param = model_param
         self.data = []
         self.labels = []
         self.length = 0
         for ind in tqdm(range(len(df))):
             row = df.iloc[ind]
-            crops = process_npy_file(PREPROCESS_PATH, row[0])
+            crops = process_npy_file(PREPROCESS_PATH, row[0], model_param['SECONDS'])
             for crop in crops:
                 self.length = self.length + 1
                 self.data.append(crop[np.newaxis, ...])
@@ -53,10 +54,10 @@ class SoundDatasetTest(Dataset):
         return len(self.df)
 
 
-def process_npy_file(path, name):
+def process_npy_file(path, name, seconds):
     path = os.path.join(path, name)
     path = path + '.npy'
-    crops = get_samples_from_file(path)
+    crops = get_samples_from_file(path, seconds)
     # crops = get_one_sample_from_file(path)
     return crops
 

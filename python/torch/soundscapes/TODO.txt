@@ -24,9 +24,5 @@ handle separators
 ./test.sh /data/test/ /wdata/solution.csv 1 1
 
 
-1. Model from
-https://keras.io/examples/audio/speaker_recognition_using_cnn/
-2. Half precision +
-
-
-augmentation + whole file
+1.augmentation + whole file
+2. remove speech

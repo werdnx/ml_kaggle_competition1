@@ -42,7 +42,7 @@ def doTrain(model, epoch, train_loader, optimizer, resnet_train_losses):
         loss.backward()
         optimizer.step()
 
-        if batch_idx % 10 == 0:  # print training stats
+        if batch_idx % 50 == 0:  # print training stats
             print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
                 epoch, batch_idx * len(data), len(train_loader.dataset),
                        100. * batch_idx / len(train_loader), loss))
@@ -73,7 +73,7 @@ def validation(model, test_loader, resnet_valid_losses, epoch):
         # output = output.permute(1, 0, 2)
         loss = F.nll_loss(output, target)
         batch_losses.append(loss.item())
-        if batch_idx % 10 == 0:  # print training stats
+        if batch_idx % 50 == 0:  # print training stats
             print('Validation Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
                 epoch, batch_idx * len(crops_batches), len(test_loader.dataset),
                        100. * batch_idx / len(test_loader), loss))

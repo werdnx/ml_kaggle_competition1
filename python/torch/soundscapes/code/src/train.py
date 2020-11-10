@@ -13,7 +13,7 @@ from tqdm import tqdm
 
 from config import TRAIN_PATH, MODEL_PATH, MODEL_PARAMS
 from sampler import SoundDatasetSampler
-from sound_dataset import sampler_label_callback, SoundDataset
+from sound_dataset import sampler_label_callback, SoundDataset, SoundDatasetValidation
 from sound_dataset_random import SoundDatasetRandom
 
 if torch.cuda.is_available():
@@ -59,24 +59,38 @@ def validation(model, test_loader, resnet_valid_losses, epoch):
     for batch_idx, (crops_batches, target) in enumerate(test_loader):
         with torch.no_grad():
             target = target.to(device)
-            # for crops in crops_batches:
-            #     crops = crops.half()
-            #     crops = crops.to(device)
-            #     output = model(crops)
-            #     output = output.sum(0) / float(len(crops))
 
-            crops_batches = crops_batches.half()
-            crops_batches = crops_batches.to(device)
-            output = model(crops_batches)
+            probs = torch.zeros(len(crops_batches), 9)
+            for crop_batch_idx, crops in enumerate(crops_batches):
+                for crop in crops:
+                    crop = crop[np.newaxis, ...]
+                    crop = crop.half()
+                    crop = crop.to(device)
+                    output = model(crop)
+                    output = torch.exp(output)
+                    probs[crop_batch_idx] = torch.add(probs[crop_batch_idx], output)
+                probs[crop_batch_idx] = probs[crop_batch_idx] / float(len(crops))
+
             trace_y.append(target.cpu().detach().numpy())
-            trace_yhat.append(output.cpu().detach().numpy())
-            # output = output.permute(1, 0, 2)
-            loss = F.nll_loss(output, target)
+            trace_yhat.append(probs.numpy())
+            loss = F.nll_loss(probs, target)
             batch_losses.append(loss.item())
             if batch_idx % 50 == 0:  # print training stats
                 print('Validation Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
                     epoch, batch_idx * len(crops_batches), len(test_loader.dataset),
                            100. * batch_idx / len(test_loader), loss))
+
+            # crops_batches = crops_batches.half()
+            # crops_batches = crops_batches.to(device)
+            # output = model(crops_batches)
+            # trace_y.append(target.cpu().detach().numpy())
+            # trace_yhat.append(output.cpu().detach().numpy())
+            # loss = F.nll_loss(output, target)
+            # batch_losses.append(loss.item())
+            # if batch_idx % 50 == 0:  # print training stats
+            #     print('Validation Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
+            #         epoch, batch_idx * len(crops_batches), len(test_loader.dataset),
+            #                100. * batch_idx / len(test_loader), loss))
 
     resnet_valid_losses.append(batch_losses)
     trace_y = np.concatenate(trace_y)
@@ -119,7 +133,7 @@ def train(data_folder):
         # valid_df = valid_df[:100]
 
         train_set = SoundDatasetRandom(TRAIN_PATH, train_df, model_param)
-        validation_set = SoundDataset(TRAIN_PATH, valid_df, model_param)
+        validation_set = SoundDatasetValidation(TRAIN_PATH, valid_df, model_param)
         print('model: ' + str(model_param['NAME']))
         print("Train set size: " + str(len(train_set)))
         print("Test set size: " + str(len(validation_set)))

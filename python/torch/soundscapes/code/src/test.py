@@ -44,7 +44,7 @@ def test(data_folder, submission_path):
             probs = np.zeros(9)
             for crop in crops_data[1]:
                 crop = crop[np.newaxis, ...]
-                crop = crop[None, ...]
+                # crop = crop[None, ...]
                 crop = crop.half()
                 crop = crop.to(device)
                 output = model(crop)

@@ -64,4 +64,3 @@ def get_one_sample_from_file(npy_file_path, n_fft=2048, hop_length=512, n_mels=1
     spec = librosa.feature.melspectrogram(wave, sr=SAMPLE_RATE, n_fft=n_fft,
                                           hop_length=hop_length, n_mels=n_mels, fmin=fmin, fmax=fmax)
     return torch.from_numpy(spec)
-    return result

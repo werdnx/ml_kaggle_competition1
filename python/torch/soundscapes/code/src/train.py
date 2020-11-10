@@ -57,26 +57,26 @@ def validation(model, test_loader, resnet_valid_losses, epoch):
     trace_y = []
     trace_yhat = []
     for batch_idx, (crops_batches, target) in enumerate(test_loader):
-        target = target.to(device)
+        with torch.no_grad():
+            target = target.to(device)
+            # for crops in crops_batches:
+            #     crops = crops.half()
+            #     crops = crops.to(device)
+            #     output = model(crops)
+            #     output = output.sum(0) / float(len(crops))
 
-        # for crops in crops_batches:
-        #     crops = crops.half()
-        #     crops = crops.to(device)
-        #     output = model(crops)
-        #     output = output.sum(0) / float(len(crops))
-
-        crops_batches = crops_batches.half()
-        crops_batches = crops_batches.to(device)
-        output = model(crops_batches)
-        trace_y.append(target.cpu().detach().numpy())
-        trace_yhat.append(output.cpu().detach().numpy())
-        # output = output.permute(1, 0, 2)
-        loss = F.nll_loss(output, target)
-        batch_losses.append(loss.item())
-        if batch_idx % 50 == 0:  # print training stats
-            print('Validation Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
-                epoch, batch_idx * len(crops_batches), len(test_loader.dataset),
-                       100. * batch_idx / len(test_loader), loss))
+            crops_batches = crops_batches.half()
+            crops_batches = crops_batches.to(device)
+            output = model(crops_batches)
+            trace_y.append(target.cpu().detach().numpy())
+            trace_yhat.append(output.cpu().detach().numpy())
+            # output = output.permute(1, 0, 2)
+            loss = F.nll_loss(output, target)
+            batch_losses.append(loss.item())
+            if batch_idx % 50 == 0:  # print training stats
+                print('Validation Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
+                    epoch, batch_idx * len(crops_batches), len(test_loader.dataset),
+                           100. * batch_idx / len(test_loader), loss))
 
     resnet_valid_losses.append(batch_losses)
     trace_y = np.concatenate(trace_y)

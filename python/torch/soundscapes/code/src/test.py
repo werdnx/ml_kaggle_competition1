@@ -57,6 +57,7 @@ def test(data_folder, submission_path):
             # print('probs ')
             # print(probs)
             probs = probs / float(len(crops_data[1]))
+            probs = np.clip(probs, 0.01, 0.99)
             # probs = [min(x, 0.99) for x in probs]
             # file_name = "{}".format(file[0].split(".")[0]) + '.wav'
             # to_predict = process_file(file_name, False)

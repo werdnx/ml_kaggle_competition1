@@ -1,6 +1,5 @@
 import torch
 import torch.utils.data
-import torchvision
 
 
 class SoundDatasetSampler(torch.utils.data.sampler.Sampler):
@@ -37,12 +36,6 @@ class SoundDatasetSampler(torch.utils.data.sampler.Sampler):
     def _get_label(self, dataset, idx):
         if self.callback_get_label:
             return self.callback_get_label(dataset, idx)
-        elif isinstance(dataset, torchvision.datasets.MNIST):
-            return dataset.train_labels[idx].item()
-        elif isinstance(dataset, torchvision.datasets.ImageFolder):
-            return dataset.imgs[idx][1]
-        elif isinstance(dataset, torch.utils.data.Subset):
-            return dataset.dataset.imgs[idx][1]
         else:
             raise NotImplementedError
 

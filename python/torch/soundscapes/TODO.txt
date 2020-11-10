@@ -26,3 +26,5 @@ handle separators
 
 1.augmentation + whole file
 2. remove speech
+3. validation as submit
+4. several seconds shift

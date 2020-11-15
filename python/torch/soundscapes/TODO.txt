@@ -28,3 +28,16 @@ handle separators
 2. remove speech
 3. validation as submit
 4. several seconds shift
+
+
+audio_metadata
+
+
+#Let there be 9 samples and 1 sample in class 0 and 1 respectively
+class_counts = [9.0, 1.0]
+num_samples = len(class_counts)
+labels = [0, 0,..., 0, 1] #corresponding labels of samples
+
+class_weights = [num_samples/class_counts[i] for i in range(len(class_counts))]
+weights = [class_weights[labels[i]] for i in range(int(num_samples))]
+sampler = WeightedRandomSampler(torch.DoubleTensor(weights), int(num_samples))

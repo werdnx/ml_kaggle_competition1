@@ -11,9 +11,10 @@ from efficientnet_pytorch import EfficientNet
 from sklearn.model_selection import train_test_split
 from tqdm import tqdm
 
-from config import TRAIN_PATH, MODEL_PATH, MODEL_PARAMS
+from audioutils import get_samples_from_file
+from config import TRAIN_PATH, MODEL_PATH, MODEL_PARAMS, HALF
 from sampler import SoundDatasetSampler
-from sound_dataset import sampler_label_callback, SoundDataset, SoundDatasetValidation
+from sound_dataset import SoundDatasetValidation, SoundDataset, sampler_label_callback
 from sound_dataset_random import SoundDatasetRandom
 
 if torch.cuda.is_available():
@@ -22,13 +23,20 @@ else:
     device = torch.device('cpu')
 
 
+def wrap(data):
+    if HALF:
+        return data.half()
+    else:
+        return data
+
+
 def doTrain(model, epoch, train_loader, optimizer, resnet_train_losses):
     # loss_f = LabelSmoothingCrossEntropy()
     model.train()
     batch_losses = []
     for batch_idx, (data, target) in enumerate(train_loader):
         optimizer.zero_grad()
-        data = data.half()
+        data = wrap(data)
         data = data.to(device)
         # target = target.half()
         target = target.to(device)
@@ -50,47 +58,52 @@ def doTrain(model, epoch, train_loader, optimizer, resnet_train_losses):
     print(f'Epoch - {epoch} Train-Loss : {np.mean(resnet_train_losses[-1])}')
 
 
-def validation(model, test_loader, resnet_valid_losses, epoch):
+def validation(model, test_loader, resnet_valid_losses, epoch, model_param):
     model.eval()
-    # correct = 0
     batch_losses = []
     trace_y = []
     trace_yhat = []
     for batch_idx, (crops_batches, target) in enumerate(test_loader):
-        with torch.no_grad():
-            target = target.to(device)
+        # target = target.to(device)
 
-            probs = torch.zeros(len(crops_batches), 9)
-            for crop_batch_idx, crops in enumerate(crops_batches):
-                for crop in crops:
-                    crop = crop[np.newaxis, ...]
-                    crop = crop.half()
-                    crop = crop.to(device)
-                    output = model(crop)
-                    output = torch.exp(output)
-                    probs[crop_batch_idx] = torch.add(probs[crop_batch_idx], output)
-                probs[crop_batch_idx] = probs[crop_batch_idx] / float(len(crops))
+        probs = torch.zeros(len(crops_batches), 9)
+        # probs = probs.to(device)
+        for crop_batch_idx, file_path in enumerate(crops_batches):
+            crops = get_samples_from_file(file_path, model_param['SECONDS'])
+            for crop in crops:
+                crop = crop[np.newaxis, ...]
+                crop = crop[None, ...]
+                crop = wrap(crop)
+                crop = crop.to(device)
+                output = model(crop)
+                probs[crop_batch_idx] = torch.add(probs[crop_batch_idx], output.cpu().detach())
+                crop.detach()
+            probs[crop_batch_idx] = probs[crop_batch_idx] / float(len(crops))
 
-            trace_y.append(target.cpu().detach().numpy())
-            trace_yhat.append(probs.numpy())
-            loss = F.nll_loss(probs, target)
-            batch_losses.append(loss.item())
-            if batch_idx % 50 == 0:  # print training stats
-                print('Validation Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
-                    epoch, batch_idx * len(crops_batches), len(test_loader.dataset),
-                           100. * batch_idx / len(test_loader), loss))
+        # trace_y.append(target.cpu().detach().numpy())
+        trace_y.append(target.numpy())
+        trace_yhat.append(probs.numpy())
+        # trace_yhat.append(probs.cpu().detach().numpy())
+        loss = F.nll_loss(probs, target)
+        batch_losses.append(loss.item())
+        # target.detach()
+        # probs.detach()
+        if batch_idx % 10 == 0:  # print training stats
+            print('Validation Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
+                epoch, batch_idx * len(crops_batches), len(test_loader.dataset),
+                       100. * batch_idx / len(test_loader), loss))
 
-            # crops_batches = crops_batches.half()
-            # crops_batches = crops_batches.to(device)
-            # output = model(crops_batches)
-            # trace_y.append(target.cpu().detach().numpy())
-            # trace_yhat.append(output.cpu().detach().numpy())
-            # loss = F.nll_loss(output, target)
-            # batch_losses.append(loss.item())
-            # if batch_idx % 50 == 0:  # print training stats
-            #     print('Validation Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
-            #         epoch, batch_idx * len(crops_batches), len(test_loader.dataset),
-            #                100. * batch_idx / len(test_loader), loss))
+        # crops_batches = crops_batches.half()
+        # crops_batches = crops_batches.to(device)
+        # output = model(crops_batches)
+        # trace_y.append(target.cpu().detach().numpy())
+        # trace_yhat.append(output.cpu().detach().numpy())
+        # loss = F.nll_loss(output, target)
+        # batch_losses.append(loss.item())
+        # if batch_idx % 50 == 0:  # print training stats
+        #     print('Validation Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
+        #         epoch, batch_idx * len(crops_batches), len(test_loader.dataset),
+        #                100. * batch_idx / len(test_loader), loss))
 
     resnet_valid_losses.append(batch_losses)
     trace_y = np.concatenate(trace_y)
@@ -114,13 +127,24 @@ def print_loss(resnet_train_losses):
 
 
 def train(data_folder):
-    df = pd.read_csv(os.path.join(data_folder, 'train_ground_truth.csv'), dtype={0: str, 1: str})
-
+    df = pd.read_csv(os.path.join(data_folder, 'train_ground_truth.csv'), dtype={0: str, 1: str},
+                     names=['name', 'target'])
+    files = [(os.path.join(TRAIN_PATH, i), i) for i in os.listdir(TRAIN_PATH)]
+    to_train = []
+    for f in files:
+        name = f[1].split(".")[0]
+        row = df[df['name'] == name]
+        row = row.iloc[0]
+        # print(row)
+        to_train.append({'name': row[0], 'target': row[1]})
+    df = pd.DataFrame(to_train)
+    print(df.head())
+    print('len of train df ' + str(len(df)))
     # skf = KFold(n_splits=FOLDS, shuffle=True, random_state=42)
     # for fold, (idxT, idxV) in enumerate(skf.split(np.arange(len(df)))):
     for model_param in MODEL_PARAMS:
         df = df.sample(frac=1).reset_index(drop=True)
-        train_df, valid_df = train_test_split(df, test_size=0.2)
+        train_df, valid_df = train_test_split(df, test_size=0.2, stratify=df['target'].to_numpy())
         # msk = np.random.rand(len(df)) < 0.7
         # train_df = df[msk]
         # valid_df = df[~msk]
@@ -144,7 +168,7 @@ def train(data_folder):
                                                                                callback_get_label=sampler_label_callback),
                                                    num_workers=4
                                                    )
-        test_loader = torch.utils.data.DataLoader(validation_set, batch_size=model_param['VALID_BATCH'], shuffle=False,
+        test_loader = torch.utils.data.DataLoader(validation_set, batch_size=model_param['VALID_BATCH'], shuffle=True,
                                                   num_workers=4)
         # model_ft = models.resnet152(pretrained=True)
         # num_ftrs = model_ft.fc.in_features
@@ -158,14 +182,14 @@ def train(data_folder):
             nn.Linear(num_ftrs, 9),
             nn.LogSoftmax(dim=-1)
         )
-        net_model.half()  # convert to half precision
+        net_model = wrap(net_model)  # convert to half precision
         for layer in net_model.modules():
             if isinstance(layer, nn.BatchNorm1d):
                 layer.float()
         net_model.to(device)
         print(net_model)
-        optimizer = optim.SGD(net_model.parameters(), lr=1e-3, momentum=0.9)
-        # optimizer = optim.Adam(net_model.parameters(), eps=1e-4)
+        # optimizer = optim.SGD(net_model.parameters(), lr=1e-3, momentum=0.9)
+        optimizer = optim.Adam(net_model.parameters())
         scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=20, gamma=0.1)
         resnet_train_losses = []
         resnet_valid_losses = []
@@ -173,7 +197,7 @@ def train(data_folder):
         for epoch in tqdm(range(1, model_param['EPOCHS'] + 1)):
             doTrain(net_model, epoch, train_loader, optimizer, resnet_train_losses)
             scheduler.step()
-            loss = validation(net_model, test_loader, resnet_valid_losses, epoch)
+            loss = validation(net_model, test_loader, resnet_valid_losses, epoch, model_param)
             if loss < best_loss:
                 print('!!!!!!!!!save best model ' + model_param['NAME'])
                 torch.save(net_model, MODEL_PATH + '_' + model_param['NAME'])

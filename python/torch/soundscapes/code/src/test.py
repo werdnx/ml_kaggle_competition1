@@ -9,6 +9,7 @@ from tqdm import tqdm
 
 from audioutils import get_samples_from_file
 from config import TEST_PATH, MODEL_PATH, PREPROCESS_PATH_TEST, MODEL_PARAMS
+from train import wrap
 
 if torch.cuda.is_available():
     device = torch.device('cuda:0')
@@ -43,9 +44,11 @@ def test(data_folder, submission_path):
         for crops_data in tqdm(predict_data):
             probs = np.zeros(9)
             for crop in crops_data[1]:
+                # dimension for channel
                 crop = crop[np.newaxis, ...]
-                # crop = crop[None, ...]
-                crop = crop.half()
+                # demension for batch
+                crop = crop[None, ...]
+                crop = wrap(crop)
                 crop = crop.to(device)
                 output = model(crop)
                 # arr = output.data.cpu().numpy()

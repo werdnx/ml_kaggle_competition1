@@ -3,6 +3,7 @@ import numpy as np
 import torch
 
 from config import SAMPLE_RATE
+from utils import augment
 
 
 def spec_to_image(spec, eps=1e-6):
@@ -27,10 +28,12 @@ def get_melspectrogram_db(file_path, sr=None, n_fft=2048, hop_length=512, n_mels
     return spec_db
 
 
-def get_samples_from_file(npy_file_path, seconds, n_fft=2048, hop_length=512, n_mels=128):
+def get_samples_from_file(npy_file_path, seconds, aug=False, n_fft=2048, hop_length=512, n_mels=128):
     wave = np.load(npy_file_path)
     sample_length = seconds * SAMPLE_RATE
     result = []
+    if aug:
+        wave = augment(samples=wave, sample_rate=SAMPLE_RATE)
     for idx in range(0, len(wave), sample_length):
         cropped_wave = wave[idx:idx + sample_length]
         if len(cropped_wave) < sample_length:

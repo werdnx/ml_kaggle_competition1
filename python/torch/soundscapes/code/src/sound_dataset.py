@@ -3,7 +3,6 @@ import os
 import numpy as np
 from torch.utils.data import Dataset
 from tqdm import tqdm
-import torch
 
 # A,B,C,D,E,F,G,H,I
 from audioutils import get_samples_from_file
@@ -35,19 +34,21 @@ class SoundDataset(Dataset):
 
 
 class SoundDatasetValidation(Dataset):
-    def __init__(self, base, df):
+    def __init__(self, base, df, model_param):
         self.df = df
+        self.model_param = model_param
         self.base = base
         self.labels = []
-        self.data = []
+        self.file_paths = []
         for ind in tqdm(range(len(df))):
             row = df.iloc[ind]
             self.labels.append(CATEGORIES[row[1]])
-            crops = process_npy_file(PREPROCESS_PATH, row[0])
-            self.data.append(torch.from_numpy(crops))
+            path = os.path.join(PREPROCESS_PATH, row[0])
+            path = path + '.npy'
+            self.file_paths.append(path)
 
     def __getitem__(self, index):
-        return self.data[index], self.labels[index]
+        return self.file_paths[index], self.labels[index]
 
     def __len__(self):
         return len(self.df)

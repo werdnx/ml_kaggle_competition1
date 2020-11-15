@@ -8,8 +8,11 @@ if [ "$2" = "1" ]; then
   echo "not to do convertation"
 else
   echo "do convertation"
-  cd "$1"
+#  cd "$1"
+  mkdir /wdata/train_unique
+  python3 ./src/preprocess_unique.py "$1" /wdata/train_unique
   mkdir /wdata/train
+  cd /wdata/train_unique
   bash "${cur_dir}/cnv.sh" /wdata/train
   cd "$cur_dir"
 fi

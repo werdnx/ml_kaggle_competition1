@@ -1,7 +1,5 @@
-import librosa
+import torch
 import numpy as np
-import audio_metadata
-from audioutils import get_one_sample_from_file, get_samples_from_file
 
 
 def main():
@@ -55,8 +53,25 @@ def main():
     # f1 = get_one_sample_from_file('/Users/dmitrenkoandrey/PycharmProjects/ml_kaggle_competition1/temp/s1.npy')
     # f2 = get_samples_from_file('/Users/dmitrenkoandrey/PycharmProjects/ml_kaggle_competition1/temp/s1.npy')
     # print('done')
-    metadata = audio_metadata.load('/Users/dmitrenkoandrey/PycharmProjects/ml_kaggle_competition1/temp/0000322837.flac')
-    print(metadata.streaminfo.md5)
+    # metadata = audio_metadata.load('/Users/dmitrenkoandrey/PycharmProjects/ml_kaggle_competition1/temp/0000322837.flac')
+    # print(metadata.streaminfo.md5)
+    a = torch.tensor([[1, 2], [3, 4]])
+    b = torch.tensor([[5, 6], [7, 8]])
+    a = a[np.newaxis, ...][None, ...]
+    b = b[np.newaxis, ...][None, ...]
+    print(a)
+    print(b)
+    c = torch.cat((a, b), dim=0)
+    print('0')
+    print(c)
+
+    c = torch.cat((a, b), dim=1)
+    print('1')
+    print(c)
+
+    c = torch.cat((a, b), dim=2)
+    print('2')
+    print(c)
 
 
 if __name__ == "__main__":

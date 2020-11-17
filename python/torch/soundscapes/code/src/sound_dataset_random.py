@@ -5,7 +5,7 @@ from torch.utils.data import Dataset
 from tqdm import tqdm
 
 # A,B,C,D,E,F,G,H,I
-from audioutils import get_random_sample_from_file
+from audioutils import get_random_sample_from_file, get_samples_from_file
 from config import PREPROCESS_PATH
 
 CATEGORIES = {'A': 0, 'B': 1, 'C': 2, 'D': 3, 'E': 4, 'F': 5, 'G': 6, 'H': 7, 'I': 8}
@@ -17,26 +17,41 @@ class SoundDatasetRandom(Dataset):
         self.model_params = model_params
         self.base = base
         self.labels = []
+        self.length = 0
+        self.index_map = {}
+        global_idx = 0
         for ind in tqdm(range(len(df))):
             row = df.iloc[ind]
-            self.labels.append(CATEGORIES[row[1]])
+            crops = process_npy_file_all(PREPROCESS_PATH, row[0], model_params['SECONDS'])
+            for crop in crops:
+                self.index_map[global_idx] = ind
+                global_idx += 1
+                self.labels.append(CATEGORIES[row[1]])
+            self.length += len(crops)
 
     def __getitem__(self, index):
         # format the file path and load the file
-        row = self.df.iloc[index]
+        row = self.df.iloc[self.index_map[index]]
         # read from preprocessed npy file
         sound_formatted = process_npy_file(PREPROCESS_PATH, row[0], self.model_params['SECONDS'])
-
         return sound_formatted[np.newaxis, ...], self.labels[index]
 
     def __len__(self):
-        return len(self.df)
+        return self.length
 
 
 def process_npy_file(path, name, seconds):
     path = os.path.join(path, name)
     path = path + '.npy'
     crops = get_random_sample_from_file(path, seconds)
+    # crops = get_one_sample_from_file(path)
+    return crops
+
+
+def process_npy_file_all(path, name, seconds):
+    path = os.path.join(path, name)
+    path = path + '.npy'
+    crops = get_samples_from_file(path, seconds)
     # crops = get_one_sample_from_file(path)
     return crops
 

@@ -32,11 +32,11 @@ MODEL_PARAMS = [
     # {'NAME': '1_sec_b4', 'SECONDS': 1, 'TYPE': 'efficientnet-b4', 'TRAIN_BATCH': 32, 'VALID_BATCH': 16, 'EPOCHS': 50},
     # {'NAME': '10_sec_b3', 'SECONDS': 10, 'TYPE': 'efficientnet-b3', 'TRAIN_BATCH': 32, 'VALID_BATCH': 16, 'EPOCHS': 50},
     # {'NAME': '7_sec_b3', 'SECONDS': 7, 'TYPE': 'efficientnet-b3', 'TRAIN_BATCH': 32, 'VALID_BATCH': 16, 'EPOCHS': 50},
-    {'NAME': '5_sec_b3', 'SECONDS': 5, 'TYPE': 'efficientnet-b3', 'TRAIN_BATCH': 32, 'VALID_BATCH': 32, 'EPOCHS': 100}
+    # {'NAME': '5_sec_b3', 'SECONDS': 5, 'TYPE': 'efficientnet-b3', 'TRAIN_BATCH': 32, 'VALID_BATCH': 32, 'EPOCHS': 100}
     # ,
     # {'NAME': '3_sec_b3', 'SECONDS': 3, 'TYPE': 'efficientnet-b3', 'TRAIN_BATCH': 16, 'VALID_BATCH': 8, 'EPOCHS': 50}
     # ,
-    # {'NAME': '1_sec_b3', 'SECONDS': 1, 'TYPE': 'efficientnet-b3', 'TRAIN_BATCH': 32, 'VALID_BATCH': 16, 'EPOCHS': 50}
+    {'NAME': '1_sec_b3', 'SECONDS': 2, 'TYPE': 'efficientnet-b3', 'TRAIN_BATCH': 32, 'VALID_BATCH': 32, 'EPOCHS': 100}
     # ,
     # {'NAME': '10_sec_b2', 'SECONDS': 10, 'TYPE': 'efficientnet-b2', 'TRAIN_BATCH': 32, 'VALID_BATCH': 16, 'EPOCHS': 50},
     # {'NAME': '7_sec_b2', 'SECONDS': 7, 'TYPE': 'efficientnet-b2', 'TRAIN_BATCH': 32, 'VALID_BATCH': 16, 'EPOCHS': 50},

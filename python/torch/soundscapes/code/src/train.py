@@ -14,7 +14,7 @@ from tqdm import tqdm
 from audioutils import get_samples_from_file
 from config import TRAIN_PATH, MODEL_PATH, MODEL_PARAMS, HALF
 from sampler import SoundDatasetSampler
-from sound_dataset import SoundDatasetValidation, SoundDataset, sampler_label_callback
+from sound_dataset import SoundDatasetValidation, sampler_label_callback
 from sound_dataset_random import SoundDatasetRandom
 
 if torch.cuda.is_available():
@@ -40,7 +40,7 @@ def doTrain(model, epoch, train_loader, optimizer, resnet_train_losses):
         data = data.to(device)
         # target = target.half()
         target = target.to(device)
-        data = data.requires_grad_()  # set requires_grad to True for training
+        # data = data.requires_grad_()  # set requires_grad to True for training
         output = model(data)
         # output = output.permute(1, 0, 2)  # original output dimensions are batchSizex1x10
         loss = F.nll_loss(output, target)  # the loss functions expects a batchSizex10 input
@@ -58,52 +58,82 @@ def doTrain(model, epoch, train_loader, optimizer, resnet_train_losses):
     print(f'Epoch - {epoch} Train-Loss : {np.mean(resnet_train_losses[-1])}')
 
 
-def validation(model, test_loader, resnet_valid_losses, epoch, model_param):
+def print_loss(resnet_train_losses):
+    for loss in resnet_train_losses:
+        print(f'\t {np.mean(loss)}')
+
+
+def validation_group(model, test_loader, resnet_valid_losses, epoch, model_param):
     model.eval()
     batch_losses = []
     trace_y = []
     trace_yhat = []
     for batch_idx, (crops_batches, target) in enumerate(test_loader):
-        # target = target.to(device)
+        with torch.no_grad():
+            # target = target.to(device)
 
-        probs = torch.zeros(len(crops_batches), 9)
-        # probs = probs.to(device)
-        for crop_batch_idx, file_path in enumerate(crops_batches):
-            crops = get_samples_from_file(file_path, model_param['SECONDS'])
-            for crop in crops:
-                crop = crop[np.newaxis, ...]
-                crop = crop[None, ...]
-                crop = wrap(crop)
-                crop = crop.to(device)
-                output = model(crop)
-                probs[crop_batch_idx] = torch.add(probs[crop_batch_idx], output.cpu().detach())
-                crop.detach()
-            probs[crop_batch_idx] = probs[crop_batch_idx] / float(len(crops))
+            # probs = torch.zeros(len(crops_batches), 9)
+            # probs = probs.to(device)
+            log_probs = None
+            for crop_batch_idx, file_path in enumerate(crops_batches):
+                crops = get_samples_from_file(file_path, model_param['SECONDS'])
+                data = None
+                for crop in crops:
+                    if data is None:
+                        data = crop[np.newaxis, ...][None, ...]
+                    else:
+                        data = torch.cat((data, crop[np.newaxis, ...][None, ...]), dim=0)
+                    # print(data)
+                # crops = crops[None, ...]
+                crops = data
+                crops = wrap(crops)
+                crops = crops.to(device)
+                output = model(crops)
+                log_prob = torch.mean(output.cpu().detach(), dim=0)
+                if log_probs is None:
+                    log_probs = log_prob[None, ...]
+                else:
+                    log_probs = torch.cat((log_probs, log_prob[None, ...]), dim=0)
+                crops.detach()
 
-        # trace_y.append(target.cpu().detach().numpy())
-        trace_y.append(target.numpy())
-        trace_yhat.append(probs.numpy())
-        # trace_yhat.append(probs.cpu().detach().numpy())
-        loss = F.nll_loss(probs, target)
-        batch_losses.append(loss.item())
-        # target.detach()
-        # probs.detach()
-        if batch_idx % 10 == 0:  # print training stats
-            print('Validation Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
-                epoch, batch_idx * len(crops_batches), len(test_loader.dataset),
-                       100. * batch_idx / len(test_loader), loss))
+                # for crop in crops:
+                #     crop = crop[np.newaxis, ...]
+                #     crop = crop[None, ...]
+                #     crop = wrap(crop)
+                #     crop = crop.to(device)
+                #     output = model(crop)
+                #     probs[crop_batch_idx] = torch.add(probs[crop_batch_idx], output.cpu().detach())
+                #     crop.detach()
+                # probs[crop_batch_idx] = probs[crop_batch_idx] / float(len(crops))
 
-        # crops_batches = crops_batches.half()
-        # crops_batches = crops_batches.to(device)
-        # output = model(crops_batches)
-        # trace_y.append(target.cpu().detach().numpy())
-        # trace_yhat.append(output.cpu().detach().numpy())
-        # loss = F.nll_loss(output, target)
-        # batch_losses.append(loss.item())
-        # if batch_idx % 50 == 0:  # print training stats
-        #     print('Validation Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
-        #         epoch, batch_idx * len(crops_batches), len(test_loader.dataset),
-        #                100. * batch_idx / len(test_loader), loss))
+            # trace_y.append(target.cpu().detach().numpy())
+            trace_y.append(target.numpy())
+            trace_yhat.append(log_probs.numpy())
+            # trace_yhat.append(probs.cpu().detach().numpy())
+            # print('probs:')
+            # print(log_probs)
+            # print('target:')
+            # print(target)
+            loss = F.nll_loss(log_probs, target)
+            batch_losses.append(loss.item())
+            # target.detach()
+            # probs.detach()
+            if batch_idx % 10 == 0:  # print training stats
+                print('Validation Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
+                    epoch, batch_idx * len(crops_batches), len(test_loader.dataset),
+                           100. * batch_idx / len(test_loader), loss))
+
+            # crops_batches = crops_batches.half()
+            # crops_batches = crops_batches.to(device)
+            # output = model(crops_batches)
+            # trace_y.append(target.cpu().detach().numpy())
+            # trace_yhat.append(output.cpu().detach().numpy())
+            # loss = F.nll_loss(output, target)
+            # batch_losses.append(loss.item())
+            # if batch_idx % 50 == 0:  # print training stats
+            #     print('Validation Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
+            #         epoch, batch_idx * len(crops_batches), len(test_loader.dataset),
+            #                100. * batch_idx / len(test_loader), loss))
 
     resnet_valid_losses.append(batch_losses)
     trace_y = np.concatenate(trace_y)
@@ -121,9 +151,33 @@ def validation(model, test_loader, resnet_valid_losses, epoch, model_param):
     #     100. * correct / len(test_loader.dataset)))
 
 
-def print_loss(resnet_train_losses):
-    for loss in resnet_train_losses:
-        print(f'\t {np.mean(loss)}')
+def validation(model, test_loader, resnet_valid_losses, epoch, model_param):
+    model.eval()
+    batch_losses = []
+    trace_y = []
+    trace_yhat = []
+    for batch_idx, (crops_batches, target) in enumerate(test_loader):
+        with torch.no_grad():
+            target = target.to(device)
+            crops_batches = wrap(crops_batches)
+            crops_batches = crops_batches.to(device)
+            output = model(crops_batches)
+            trace_y.append(target.cpu().detach().numpy())
+            trace_yhat.append(output.cpu().detach().numpy())
+            loss = F.nll_loss(output, target)
+            batch_losses.append(loss.item())
+            if batch_idx % 50 == 0:  # print training stats
+                print('Validation Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
+                    epoch, batch_idx * len(crops_batches), len(test_loader.dataset),
+                           100. * batch_idx / len(test_loader), loss))
+
+    resnet_valid_losses.append(batch_losses)
+    trace_y = np.concatenate(trace_y)
+    trace_yhat = np.concatenate(trace_yhat)
+    accuracy = np.mean(trace_yhat.argmax(axis=1) == trace_y)
+    print(f'Epoch - {epoch} Valid-Loss : {np.mean(resnet_valid_losses[-1])} Valid-Accuracy : {accuracy}')
+
+    return np.mean(resnet_valid_losses[-1])
 
 
 def train(data_folder):
@@ -144,6 +198,7 @@ def train(data_folder):
     # for fold, (idxT, idxV) in enumerate(skf.split(np.arange(len(df)))):
     for model_param in MODEL_PARAMS:
         df = df.sample(frac=1).reset_index(drop=True)
+        # df = df[:100]
         train_df, valid_df = train_test_split(df, test_size=0.2, stratify=df['target'].to_numpy())
         # msk = np.random.rand(len(df)) < 0.7
         # train_df = df[msk]
@@ -197,7 +252,7 @@ def train(data_folder):
         for epoch in tqdm(range(1, model_param['EPOCHS'] + 1)):
             doTrain(net_model, epoch, train_loader, optimizer, resnet_train_losses)
             scheduler.step()
-            loss = validation(net_model, test_loader, resnet_valid_losses, epoch, model_param)
+            loss = validation_group(net_model, test_loader, resnet_valid_losses, epoch, model_param)
             if loss < best_loss:
                 print('!!!!!!!!!save best model ' + model_param['NAME'])
                 torch.save(net_model, MODEL_PATH + '_' + model_param['NAME'])

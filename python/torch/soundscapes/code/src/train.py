@@ -11,7 +11,7 @@ from efficientnet_pytorch import EfficientNet
 from sklearn.model_selection import train_test_split
 from tqdm import tqdm
 
-from audioutils import get_samples_from_file
+from audioutils import get_samples_from_file, get_random_samples_from_file
 from config import TRAIN_PATH, MODEL_PATH, MODEL_PARAMS, HALF, GROUP_PATH
 from sampler import SoundDatasetSampler
 from sound_dataset import SoundDatasetValidation, sampler_label_callback
@@ -92,7 +92,7 @@ def validation_group(model, test_loader, resnet_valid_losses, epoch, model_param
             # probs = probs.to(device)
             log_probs = None
             for crop_batch_idx, file_path in enumerate(crops_batches):
-                crops = get_samples_from_file(file_path, model_param['SECONDS'])
+                crops = get_random_samples_from_file(file_path, model_param['SECONDS'])
                 data = None
                 for crop in crops:
                     if data is None:
@@ -211,14 +211,14 @@ def train(data_folder):
     print(df.head())
     print('len of train df ' + str(len(df)))
     # {line, target}
-    groupsDf = read_groups(df)
+    # groupsDf = read_groups(df)
     for model_param in MODEL_PARAMS:
         df = df.sample(frac=1).reset_index(drop=True)
         # df = df[:100]
-        # train_df, valid_df = train_test_split(df, test_size=0.2, stratify=df['target'].to_numpy())
-        train_df, valid_df = train_test_split(groupsDf, test_size=0.2, stratify=df['target'].to_numpy())
-        train_df = create_df(train_df)
-        valid_df = create_df(valid_df)
+        train_df, valid_df = train_test_split(df, test_size=0.2, stratify=df['target'].to_numpy())
+        # train_df, valid_df = train_test_split(groupsDf, test_size=0.2, stratify=df['target'].to_numpy())
+        # train_df = create_df(train_df)
+        # valid_df = create_df(valid_df)
 
         # msk = np.random.rand(len(df)) < 0.7
         # train_df = df[msk]

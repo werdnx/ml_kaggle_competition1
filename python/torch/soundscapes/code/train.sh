@@ -23,5 +23,6 @@ else
   mkdir /wdata/preprocessed_audio
   python3 ./src/preprocess_audio.py "$1"
 fi
+cp ./src/distribution-train-out.txt /wdata/
 
 python3 ./src/train.py "$1"

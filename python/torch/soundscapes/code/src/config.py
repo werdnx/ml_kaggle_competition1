@@ -3,7 +3,7 @@ PREPROCESS_PATH = '/wdata/preprocessed_audio/'
 PREPROCESS_PATH_TEST = '/wdata/preprocessed_audio_test/'
 MODEL_PATH = '/wdata/model/trained_model'
 TEST_PATH = '/wdata/test'
-GROUP_PATH = '/wdata/groups'
+GROUP_PATH = '/wdata/distribution-train-out.txt'
 SAMPLE_RATE = 16000
 AUGMENT = True
 FOLDS = 3
@@ -32,19 +32,20 @@ MODEL_PARAMS = [
     # {'NAME': '3_sec_b4', 'SECONDS': 3, 'TYPE': 'efficientnet-b4', 'TRAIN_BATCH': 32, 'VALID_BATCH': 16, 'EPOCHS': 50},
     # {'NAME': '1_sec_b4', 'SECONDS': 1, 'TYPE': 'efficientnet-b4', 'TRAIN_BATCH': 32, 'VALID_BATCH': 16, 'EPOCHS': 50},
     {'NAME': '10_sec_b3', 'SECONDS': 10, 'TYPE': 'efficientnet-b3', 'TRAIN_BATCH': 16, 'VALID_BATCH': 16, 'EPOCHS': 50},
-    {'NAME': '7_sec_b3', 'SECONDS': 7, 'TYPE': 'efficientnet-b3', 'TRAIN_BATCH': 16, 'VALID_BATCH': 16, 'EPOCHS': 15},
-    {'NAME': '5_sec_b3', 'SECONDS': 5, 'TYPE': 'efficientnet-b3', 'TRAIN_BATCH': 16, 'VALID_BATCH': 16, 'EPOCHS': 15}
-    ,
-    {'NAME': '3_sec_b3', 'SECONDS': 3, 'TYPE': 'efficientnet-b3', 'TRAIN_BATCH': 16, 'VALID_BATCH': 16, 'EPOCHS': 15}
-    ,
-    {'NAME': '1_sec_b3', 'SECONDS': 1, 'TYPE': 'efficientnet-b3', 'TRAIN_BATCH': 32, 'VALID_BATCH': 32, 'EPOCHS': 15},
-    {'NAME': '2_sec_b3', 'SECONDS': 2, 'TYPE': 'efficientnet-b3', 'TRAIN_BATCH': 32, 'VALID_BATCH': 32, 'EPOCHS': 15}
-    ,
-    {'NAME': '10_sec_b2', 'SECONDS': 10, 'TYPE': 'efficientnet-b2', 'TRAIN_BATCH': 16, 'VALID_BATCH': 16, 'EPOCHS': 15},
-    {'NAME': '7_sec_b2', 'SECONDS': 7, 'TYPE': 'efficientnet-b2', 'TRAIN_BATCH': 16, 'VALID_BATCH': 16, 'EPOCHS': 15},
-    {'NAME': '5_sec_b2', 'SECONDS': 5, 'TYPE': 'efficientnet-b2', 'TRAIN_BATCH': 16, 'VALID_BATCH': 16, 'EPOCHS': 15},
-    {'NAME': '3_sec_b2', 'SECONDS': 3, 'TYPE': 'efficientnet-b2', 'TRAIN_BATCH': 16, 'VALID_BATCH': 16, 'EPOCHS': 15},
-    {'NAME': '1_sec_b2', 'SECONDS': 1, 'TYPE': 'efficientnet-b2', 'TRAIN_BATCH': 32, 'VALID_BATCH': 32, 'EPOCHS': 15},
+    {'NAME': '7_sec_b3', 'SECONDS': 7, 'TYPE': 'efficientnet-b3', 'TRAIN_BATCH': 16, 'VALID_BATCH': 16, 'EPOCHS': 15}
+    # ,
+    # {'NAME': '5_sec_b3', 'SECONDS': 5, 'TYPE': 'efficientnet-b3', 'TRAIN_BATCH': 16, 'VALID_BATCH': 16, 'EPOCHS': 15}
+    # ,
+    # {'NAME': '3_sec_b3', 'SECONDS': 3, 'TYPE': 'efficientnet-b3', 'TRAIN_BATCH': 16, 'VALID_BATCH': 16, 'EPOCHS': 15}
+    # ,
+    # {'NAME': '1_sec_b3', 'SECONDS': 1, 'TYPE': 'efficientnet-b3', 'TRAIN_BATCH': 32, 'VALID_BATCH': 32, 'EPOCHS': 15},
+    # {'NAME': '2_sec_b3', 'SECONDS': 2, 'TYPE': 'efficientnet-b3', 'TRAIN_BATCH': 32, 'VALID_BATCH': 32, 'EPOCHS': 15}
+    # ,
+    # {'NAME': '10_sec_b2', 'SECONDS': 10, 'TYPE': 'efficientnet-b2', 'TRAIN_BATCH': 16, 'VALID_BATCH': 16, 'EPOCHS': 15},
+    # {'NAME': '7_sec_b2', 'SECONDS': 7, 'TYPE': 'efficientnet-b2', 'TRAIN_BATCH': 16, 'VALID_BATCH': 16, 'EPOCHS': 15},
+    # {'NAME': '5_sec_b2', 'SECONDS': 5, 'TYPE': 'efficientnet-b2', 'TRAIN_BATCH': 16, 'VALID_BATCH': 16, 'EPOCHS': 15},
+    # {'NAME': '3_sec_b2', 'SECONDS': 3, 'TYPE': 'efficientnet-b2', 'TRAIN_BATCH': 16, 'VALID_BATCH': 16, 'EPOCHS': 15},
+    # {'NAME': '1_sec_b2', 'SECONDS': 1, 'TYPE': 'efficientnet-b2', 'TRAIN_BATCH': 32, 'VALID_BATCH': 32, 'EPOCHS': 15},
     # {'NAME': '10_sec_b1', 'SECONDS': 10, 'TYPE': 'efficientnet-b1', 'TRAIN_BATCH': 64, 'VALID_BATCH': 32, 'EPOCHS': 50},
     # {'NAME': '7_sec_b1', 'SECONDS': 7, 'TYPE': 'efficientnet-b1', 'TRAIN_BATCH': 64, 'VALID_BATCH': 32, 'EPOCHS': 50},
     # {'NAME': '5_sec_b1', 'SECONDS': 5, 'TYPE': 'efficientnet-b1', 'TRAIN_BATCH': 64, 'VALID_BATCH': 32, 'EPOCHS': 50},

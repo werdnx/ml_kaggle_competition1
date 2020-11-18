@@ -5,7 +5,7 @@ from torch.utils.data import Dataset
 from tqdm import tqdm
 
 # A,B,C,D,E,F,G,H,I
-from audioutils import get_random_sample_from_file, get_samples_from_file
+from audioutils import get_random_sample_from_file, get_samples_from_file, samples_in_file
 from config import PREPROCESS_PATH, AUGMENT
 
 CATEGORIES = {'A': 0, 'B': 1, 'C': 2, 'D': 3, 'E': 4, 'F': 5, 'G': 6, 'H': 7, 'I': 8}
@@ -22,12 +22,12 @@ class SoundDatasetRandom(Dataset):
         global_idx = 0
         for ind in tqdm(range(len(df))):
             row = df.iloc[ind]
-            crops = process_npy_file_all(PREPROCESS_PATH, row[0], model_params['SECONDS'])
-            for crop in crops:
+            samples = sapmles_in_f(PREPROCESS_PATH, row[0], model_params['SECONDS'])
+            for i in range(samples):
                 self.index_map[global_idx] = ind
                 global_idx += 1
                 self.labels.append(CATEGORIES[row[1]])
-            self.length += len(crops)
+            self.length += samples
 
     def __getitem__(self, index):
         # format the file path and load the file
@@ -54,6 +54,12 @@ def process_npy_file_all(path, name, seconds):
     crops = get_samples_from_file(path, seconds)
     # crops = get_one_sample_from_file(path)
     return crops
+
+
+def sapmles_in_f(path, name, seconds):
+    path = os.path.join(path, name)
+    path = path + '.npy'
+    return samples_in_file(path, seconds)
 
 
 def sampler_label_callback(dataset, index):

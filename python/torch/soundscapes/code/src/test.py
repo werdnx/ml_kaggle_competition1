@@ -7,7 +7,7 @@ import pandas as pd
 import torch
 from tqdm import tqdm
 
-from audioutils import get_samples_from_file
+from audioutils import get_samples_from_file, get_random_samples_from_file
 from config import TEST_PATH, MODEL_PATH, PREPROCESS_PATH_TEST, MODEL_PARAMS
 from train import wrap
 
@@ -22,7 +22,7 @@ def prepare_predict_data(files_to_predict, seconds):
     for file in tqdm(files_to_predict):
         if file[1].split(".")[0] != 'train_ground_truth':
             file_name = PREPROCESS_PATH_TEST + file[1].split(".")[0] + '.npy'
-            crops = get_samples_from_file(file_name, seconds)
+            crops = get_random_samples_from_file(file_name, seconds)
             # crops = get_one_sample_from_file(file_name)
             result.append({0: file[1], 1: crops})
     return result

@@ -46,7 +46,8 @@ def get_samples_from_file(npy_file_path, seconds, aug=False, n_fft=2048, hop_len
     return result
 
 
-def get_random_sample_from_file(npy_file_path, seconds, n_fft=2048, hop_length=512, n_mels=128, fmin=20, fmax=8300):
+def get_random_sample_from_file(npy_file_path, seconds, aug=False, n_fft=2048, hop_length=512, n_mels=128, fmin=20,
+                                fmax=8300):
     wave = np.load(npy_file_path)
     sample_length = seconds * SAMPLE_RATE
     if len(wave) < sample_length:
@@ -56,6 +57,8 @@ def get_random_sample_from_file(npy_file_path, seconds, n_fft=2048, hop_length=5
         print(sample_length)
     rand_index = np.random.randint(0, high=(len(wave) - sample_length))
     cropped_wave = wave[rand_index:rand_index + sample_length]
+    if aug:
+        cropped_wave = augment(samples=cropped_wave, sample_rate=SAMPLE_RATE)
     spec = librosa.feature.melspectrogram(cropped_wave, sr=SAMPLE_RATE, n_fft=n_fft,
                                           hop_length=hop_length, n_mels=n_mels, fmin=fmin, fmax=fmax)
     return torch.from_numpy(spec)

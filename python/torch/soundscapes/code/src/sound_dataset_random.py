@@ -6,7 +6,7 @@ from tqdm import tqdm
 
 # A,B,C,D,E,F,G,H,I
 from audioutils import get_random_sample_from_file, get_samples_from_file
-from config import PREPROCESS_PATH
+from config import PREPROCESS_PATH, AUGMENT
 
 CATEGORIES = {'A': 0, 'B': 1, 'C': 2, 'D': 3, 'E': 4, 'F': 5, 'G': 6, 'H': 7, 'I': 8}
 
@@ -43,7 +43,7 @@ class SoundDatasetRandom(Dataset):
 def process_npy_file(path, name, seconds):
     path = os.path.join(path, name)
     path = path + '.npy'
-    crops = get_random_sample_from_file(path, seconds)
+    crops = get_random_sample_from_file(path, seconds, aug=AUGMENT)
     # crops = get_one_sample_from_file(path)
     return crops
 

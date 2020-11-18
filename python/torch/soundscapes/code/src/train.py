@@ -12,7 +12,7 @@ from sklearn.model_selection import train_test_split
 from tqdm import tqdm
 
 from audioutils import get_samples_from_file
-from config import TRAIN_PATH, MODEL_PATH, MODEL_PARAMS, HALF
+from config import TRAIN_PATH, MODEL_PATH, MODEL_PARAMS, HALF, GROUP_PATH
 from sampler import SoundDatasetSampler
 from sound_dataset import SoundDatasetValidation, sampler_label_callback
 from sound_dataset_random import SoundDatasetRandom
@@ -28,6 +28,22 @@ def wrap(data):
         return data.half()
     else:
         return data
+
+
+def read_groups(df):
+    f = open(GROUP_PATH, "r")
+    lines = f.readlines()
+    result = []
+    for line in lines:
+        # r_l = []
+        items = line.split(",")
+        item = items[0]
+        #     r_l.append(item)
+        # result.append(r_l)
+        row = df[df['name'] == item]
+        row = row.iloc[0]
+        result.append({"line": line, "target": row[1]})
+    return pd.DataFrame(result)
 
 
 def doTrain(model, epoch, train_loader, optimizer, resnet_train_losses):
@@ -183,23 +199,27 @@ def validation(model, test_loader, resnet_valid_losses, epoch, model_param):
 def train(data_folder):
     df = pd.read_csv(os.path.join(data_folder, 'train_ground_truth.csv'), dtype={0: str, 1: str},
                      names=['name', 'target'])
-    files = [(os.path.join(TRAIN_PATH, i), i) for i in os.listdir(TRAIN_PATH)]
-    to_train = []
-    for f in files:
-        name = f[1].split(".")[0]
-        row = df[df['name'] == name]
-        row = row.iloc[0]
-        # print(row)
-        to_train.append({'name': row[0], 'target': row[1]})
-    df = pd.DataFrame(to_train)
+    # files = [(os.path.join(TRAIN_PATH, i), i) for i in os.listdir(TRAIN_PATH)]
+    # to_train = []
+    # for f in files:
+    #     name = f[1].split(".")[0]
+    #     row = df[df['name'] == name]
+    #     row = row.iloc[0]
+    #     print(row)
+    # to_train.append({'name': row[0], 'target': row[1]})
+    # df = pd.DataFrame(to_train)
     print(df.head())
     print('len of train df ' + str(len(df)))
-    # skf = KFold(n_splits=FOLDS, shuffle=True, random_state=42)
-    # for fold, (idxT, idxV) in enumerate(skf.split(np.arange(len(df)))):
+    # {line, target}
+    groupsDf = read_groups(df)
     for model_param in MODEL_PARAMS:
         df = df.sample(frac=1).reset_index(drop=True)
         # df = df[:100]
-        train_df, valid_df = train_test_split(df, test_size=0.2, stratify=df['target'].to_numpy())
+        # train_df, valid_df = train_test_split(df, test_size=0.2, stratify=df['target'].to_numpy())
+        train_df, valid_df = train_test_split(groupsDf, test_size=0.2, stratify=df['target'].to_numpy())
+        train_df = create_df(train_df)
+        valid_df = create_df(valid_df)
+
         # msk = np.random.rand(len(df)) < 0.7
         # train_df = df[msk]
         # valid_df = df[~msk]
@@ -262,6 +282,16 @@ def train(data_folder):
         print('validation losses stat:')
         print_loss(resnet_valid_losses)
         # torch.save(net_model, MODEL_PATH + '_fold' + str(fold))
+
+
+def create_df(grouped_df):
+    result = []
+    for ind in range(len(grouped_df)):
+        row = grouped_df.iloc[ind]
+        names = row[0].split(",")
+        for name in names:
+            result.append({"name": name, "target": row[1]})
+    return pd.DataFrame(result)
 
 
 def main():

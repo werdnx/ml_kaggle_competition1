@@ -3,6 +3,7 @@ PREPROCESS_PATH = '/wdata/preprocessed_audio/'
 PREPROCESS_PATH_TEST = '/wdata/preprocessed_audio_test/'
 MODEL_PATH = '/wdata/model/trained_model'
 TEST_PATH = '/wdata/test'
+GROUP_PATH = '/wdata/groups'
 SAMPLE_RATE = 16000
 AUGMENT = True
 FOLDS = 3

@@ -8,10 +8,11 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from efficientnet_pytorch import EfficientNet
+from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import train_test_split
 from tqdm import tqdm
 
-from audioutils import get_samples_from_file, get_random_samples_from_file
+from audioutils import get_random_samples_from_file
 from config import TRAIN_PATH, MODEL_PATH, MODEL_PARAMS, HALF, GROUP_PATH
 from sampler import SoundDatasetSampler
 from sound_dataset import SoundDatasetValidation, sampler_label_callback
@@ -70,10 +71,13 @@ def doTrain(model, epoch, train_loader, optimizer, resnet_train_losses):
         loss.backward()
         optimizer.step()
 
+        auc = roc_auc_score(target.cpu().detach().numpy(), torch.exp(output).data.cpu().detach().numpy(), multi_class="ovr")
+
         if batch_idx % 50 == 0:  # print training stats
             print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
                 epoch, batch_idx * len(data), len(train_loader.dataset),
                        100. * batch_idx / len(train_loader), loss))
+            print('AUC : {:.6f}'.format(auc))
     resnet_train_losses.append(batch_losses)
     print(f'Epoch - {epoch} Train-Loss : {np.mean(resnet_train_losses[-1])}')
 
@@ -134,8 +138,12 @@ def validation_group(model, test_loader, resnet_valid_losses, epoch, model_param
             # print(log_probs)
             # print('target:')
             # print(target)
-            loss = F.nll_loss(log_probs, target)
-            batch_losses.append(loss.item())
+            # loss = F.nll_loss(log_probs, target)
+            print('prooobbs')
+            print(torch.exp(log_probs).numpy())
+            loss = roc_auc_score(target.numpy(), torch.exp(log_probs).numpy(), multi_class="ovr")
+            batch_losses.append(loss)
+            # batch_losses.append(loss.item())
             # target.detach()
             # probs.detach()
             if batch_idx % 10 == 0:  # print training stats

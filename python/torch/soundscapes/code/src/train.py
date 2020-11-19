@@ -32,7 +32,7 @@ def wrap(data):
 
 def read_groups(df):
     f = open(GROUP_PATH, "r")
-    lines = f.readlines()
+    lines = f.read().splitlines()
     result = []
     for line in lines:
         # r_l = []
@@ -41,6 +41,10 @@ def read_groups(df):
         #     r_l.append(item)
         # result.append(r_l)
         row = df[df['name'] == item]
+        # print('line is ')
+        # print(line)
+        # print('line end ')
+        # print(row)
         row = row.iloc[0]
         result.append({"line": line, "target": row[1]})
     return pd.DataFrame(result)
@@ -211,14 +215,17 @@ def train(data_folder):
     print(df.head())
     print('len of train df ' + str(len(df)))
     # {line, target}
-    # groupsDf = read_groups(df)
+    groupsDf = read_groups(df)
+    print(groupsDf.head())
     for model_param in MODEL_PARAMS:
         df = df.sample(frac=1).reset_index(drop=True)
         # df = df[:100]
-        train_df, valid_df = train_test_split(df, test_size=0.2, stratify=df['target'].to_numpy())
-        # train_df, valid_df = train_test_split(groupsDf, test_size=0.2, stratify=df['target'].to_numpy())
-        # train_df = create_df(train_df)
-        # valid_df = create_df(valid_df)
+        # train_df, valid_df = train_test_split(df, test_size=0.2, stratify=df['target'].to_numpy())
+        train_df, valid_df = train_test_split(groupsDf, test_size=0.2, stratify=groupsDf['target'].to_numpy())
+        print(valid_df.head())
+        print(train_df.head())
+        train_df = create_df(train_df)
+        valid_df = create_df(valid_df)
 
         # msk = np.random.rand(len(df)) < 0.7
         # train_df = df[msk]

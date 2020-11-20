@@ -18,6 +18,7 @@ from sampler import SoundDatasetSampler
 from sound_dataset import SoundDatasetValidation, sampler_label_callback
 from sound_dataset_random import SoundDatasetRandom
 
+np.set_printoptions(threshold=sys.maxsize)
 if torch.cuda.is_available():
     device = torch.device('cuda:0')
 else:
@@ -54,6 +55,8 @@ def read_groups(df):
 def doTrain(model, epoch, train_loader, optimizer, resnet_train_losses):
     # loss_f = LabelSmoothingCrossEntropy()
     model.train()
+    trace_y = []
+    trace_yhat = []
     batch_losses = []
     for batch_idx, (data, target) in enumerate(train_loader):
         optimizer.zero_grad()
@@ -70,16 +73,25 @@ def doTrain(model, epoch, train_loader, optimizer, resnet_train_losses):
         # loss = log_loss(output[0], target)
         loss.backward()
         optimizer.step()
-
-        auc = roc_auc_score(target.cpu().detach().numpy(), torch.exp(output).data.cpu().detach().numpy(), multi_class="ovr")
+        # print('target')
+        # print(target.cpu().detach().numpy())
+        # print('preds')
+        # print(torch.exp(output).data.cpu().detach().numpy())
+        trace_y.append(target.cpu().detach().numpy())
+        trace_yhat.append(torch.exp(output).data.cpu().detach().numpy())
 
         if batch_idx % 50 == 0:  # print training stats
             print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
                 epoch, batch_idx * len(data), len(train_loader.dataset),
                        100. * batch_idx / len(train_loader), loss))
-            print('AUC : {:.6f}'.format(auc))
+
     resnet_train_losses.append(batch_losses)
     print(f'Epoch - {epoch} Train-Loss : {np.mean(resnet_train_losses[-1])}')
+    trace_y = np.concatenate(trace_y)
+    trace_yhat = np.concatenate(trace_yhat)
+    auc = roc_auc_score(trace_y, trace_yhat,
+                        multi_class="ovr", labels=[0, 1, 2, 3, 4, 5, 6, 7, 8])
+    print('AUC : {:.6f}'.format(auc))
 
 
 def print_loss(resnet_train_losses):
@@ -98,7 +110,7 @@ def validation_group(model, test_loader, resnet_valid_losses, epoch, model_param
 
             # probs = torch.zeros(len(crops_batches), 9)
             # probs = probs.to(device)
-            log_probs = None
+            probs = None
             for crop_batch_idx, file_path in enumerate(crops_batches):
                 crops = get_random_samples_from_file(file_path, model_param['SECONDS'])
                 data = None
@@ -113,11 +125,11 @@ def validation_group(model, test_loader, resnet_valid_losses, epoch, model_param
                 crops = wrap(crops)
                 crops = crops.to(device)
                 output = model(crops)
-                log_prob = torch.mean(output.cpu().detach(), dim=0)
-                if log_probs is None:
-                    log_probs = log_prob[None, ...]
+                prob = torch.mean(torch.exp(output).cpu().detach(), dim=0)
+                if probs is None:
+                    probs = prob[None, ...]
                 else:
-                    log_probs = torch.cat((log_probs, log_prob[None, ...]), dim=0)
+                    probs = torch.cat((probs, prob[None, ...]), dim=0)
                 crops.detach()
 
                 # for crop in crops:
@@ -132,17 +144,18 @@ def validation_group(model, test_loader, resnet_valid_losses, epoch, model_param
 
             # trace_y.append(target.cpu().detach().numpy())
             trace_y.append(target.numpy())
-            trace_yhat.append(log_probs.numpy())
+            trace_yhat.append(probs.numpy())
             # trace_yhat.append(probs.cpu().detach().numpy())
             # print('probs:')
             # print(log_probs)
             # print('target:')
             # print(target)
+            loss = 1.0
             # loss = F.nll_loss(log_probs, target)
-            print('prooobbs')
-            print(torch.exp(log_probs).numpy())
-            loss = roc_auc_score(target.numpy(), torch.exp(log_probs).numpy(), multi_class="ovr")
-            batch_losses.append(loss)
+            # print('prooobbs')
+            # print(torch.exp(log_probs).numpy())
+
+            # batch_losses.append(loss.item)
             # batch_losses.append(loss.item())
             # target.detach()
             # probs.detach()
@@ -167,9 +180,12 @@ def validation_group(model, test_loader, resnet_valid_losses, epoch, model_param
     trace_y = np.concatenate(trace_y)
     trace_yhat = np.concatenate(trace_yhat)
     accuracy = np.mean(trace_yhat.argmax(axis=1) == trace_y)
+    auc = roc_auc_score(trace_y, trace_yhat, multi_class="ovr",
+                        labels=[0, 1, 2, 3, 4, 5, 6, 7, 8])
     print(f'Epoch - {epoch} Valid-Loss : {np.mean(resnet_valid_losses[-1])} Valid-Accuracy : {accuracy}')
-
-    return np.mean(resnet_valid_losses[-1])
+    print('AUC : {:.6f}'.format(auc))
+    return auc
+    # return np.mean(resnet_valid_losses[-1])
     # pred = output.max(2)[1]  # get the index of the max log-probability
     # correct += pred.eq(target).cpu().sum().item()
     # if batch_idx % 10 == 0:
@@ -283,15 +299,15 @@ def train(data_folder):
         scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=20, gamma=0.1)
         resnet_train_losses = []
         resnet_valid_losses = []
-        best_loss = 100.0
+        best_auc = 0.0
         for epoch in tqdm(range(1, model_param['EPOCHS'] + 1)):
             doTrain(net_model, epoch, train_loader, optimizer, resnet_train_losses)
             scheduler.step()
-            loss = validation_group(net_model, test_loader, resnet_valid_losses, epoch, model_param)
-            if loss < best_loss:
+            auc = validation_group(net_model, test_loader, resnet_valid_losses, epoch, model_param)
+            if auc > best_auc:
                 print('!!!!!!!!!save best model ' + model_param['NAME'])
                 torch.save(net_model, MODEL_PATH + '_' + model_param['NAME'])
-                best_loss = loss
+                best_auc = auc
         print('train losses stat:')
         print_loss(resnet_train_losses)
         print('validation losses stat:')

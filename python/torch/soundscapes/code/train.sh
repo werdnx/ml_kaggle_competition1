@@ -25,4 +25,5 @@ else
 fi
 cp ./src/distribution-train-out.txt /wdata/
 
-python3 ./src/train.py "$1"
+python3 ./src/train_mean.py "$1"
+#python3 ./src/train.py "$1"

@@ -9,7 +9,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 from efficientnet_pytorch import EfficientNet
 from sklearn.metrics import roc_auc_score
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import KFold
 from tqdm import tqdm
 
 from audioutils import get_random_samples_from_file
@@ -239,13 +239,21 @@ def train(data_folder):
     print(df.head())
     print('len of train df ' + str(len(df)))
     # {line, target}
-    groupsDf = read_groups(df)
-    print(groupsDf.head())
-    for model_param in MODEL_PARAMS:
-        df = df.sample(frac=1).reset_index(drop=True)
+    # groupsDf = read_groups(df)
+    # print(groupsDf.head())
+    models_info = []
+    df = df.sample(frac=1).reset_index(drop=True)
+    skf = KFold(n_splits=5, shuffle=True, random_state=42)
+    for fold, (idxT, idxV) in enumerate(skf.split(df)):
+        train_df = df.iloc[idxT]
+        valid_df = df.iloc[idxV]
+        model_param = MODEL_PARAMS[fold]
+
+        # for model_param in MODEL_PARAMS:
+
         # df = df[:100]
         # train_df, valid_df = train_test_split(df, test_size=0.2, stratify=df['target'].to_numpy())
-        train_df, valid_df = train_test_split(groupsDf, test_size=0.2, stratify=groupsDf['target'].to_numpy())
+        # train_df, valid_df = train_test_split(df, test_size=0.2, stratify=df['target'].to_numpy())
         print(valid_df.head())
         print(train_df.head())
         train_df = create_df(train_df)
@@ -312,7 +320,9 @@ def train(data_folder):
         print_loss(resnet_train_losses)
         print('validation losses stat:')
         print_loss(resnet_valid_losses)
+        models_info.append({'fold': fold, 'name': model_param['NAME'], 'auc': best_auc})
         # torch.save(net_model, MODEL_PATH + '_fold' + str(fold))
+    print(models_info)
 
 
 def create_df(grouped_df):

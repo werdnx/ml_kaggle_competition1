@@ -20,5 +20,5 @@ else
   python3 ./src/preprocess_audio_test.py "$1" "$2"
 fi
 
-python3 ./src/test_mean.py "$1" "$2"
-#python3 ./src/test.py "$1" "$2"
+#python3 ./src/test_mean.py "$1" "$2"
+python3 ./src/test.py "$1" "$2"

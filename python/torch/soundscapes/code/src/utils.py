@@ -18,4 +18,8 @@ augment = Compose([
     Shift(min_fraction=-0.5, max_fraction=0.5, p=0.5),
 ])
 
+augment_noise = Compose([
+    AddGaussianNoise(min_amplitude=0.001, max_amplitude=0.015, p=0.5)
+])
+
 

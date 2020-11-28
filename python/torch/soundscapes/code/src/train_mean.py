@@ -1,5 +1,6 @@
 import os
 import sys
+from pickle import dump
 
 import numpy as np
 import pandas as pd
@@ -10,11 +11,12 @@ import torch.nn.functional as nnf
 import torch.optim as optim
 from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import KFold
+from sklearn.preprocessing import StandardScaler
 from tqdm import tqdm
 
 from config import MEAN_MODEL_PARAMS, MODEL_PATH
 from sampler import SoundDatasetSampler
-from sound_dataset_random import MeanDatasetRandom, sampler_label_callback
+from sound_dataset_random import sampler_label_callback, MeanDatasetFull
 
 
 class Net(nn.Module):
@@ -43,14 +45,21 @@ def train(data_folder):
     df = pd.read_csv(os.path.join(data_folder, 'train_ground_truth.csv'), dtype={0: str, 1: str},
                      names=['name', 'target'])
 
+    # fit data
+    scaler = fitX(df)
+    # end fit data
+    dump(scaler, open('/wdata/scaler.pkl', 'wb'))
+
     skf = KFold(n_splits=5, shuffle=True, random_state=42)
     for fold, (idxT, idxV) in enumerate(skf.split(df)):
         train = df.iloc[idxT]
         validation = df.iloc[idxV]
         params = MEAN_MODEL_PARAMS[fold]
 
-        train_set = MeanDatasetRandom(train, params)
-        val_set = MeanDatasetRandom(validation, params)
+        train_set = MeanDatasetFull(train)
+        # train_set = MeanDatasetRandom(train, params)
+        val_set = MeanDatasetFull(validation)
+        # val_set = MeanDatasetRandom(validation, params)
 
         train_loader = torch.utils.data.DataLoader(train_set,
                                                    batch_size=params['TRAIN_BATCH'], shuffle=False,
@@ -68,14 +77,14 @@ def train(data_folder):
         optimizer = optim.Adam(net_model.parameters())
         scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=20, gamma=0.1)
         loss_f = nn.CrossEntropyLoss()
-        for epoch in tqdm(range(1, 101)):
-            trace_y, trace_yhat = doTrain(epoch, loss_f, net_model, optimizer, train_loader, train_losses)
+        for epoch in tqdm(range(1, params['EPOCHS'])):
+            trace_y, trace_yhat = doTrain(epoch, loss_f, net_model, optimizer, train_loader, train_losses, scaler)
             auc = roc_auc_score(trace_y, trace_yhat,
                                 multi_class="ovr", labels=[0, 1, 2, 3, 4, 5, 6, 7, 8])
             print('AUC : {:.6f}'.format(auc))
             scheduler.step()
             # VALIDATION
-            valid_trace_y, valid_trace_yhat = doValidation(epoch, net_model, test_loader)
+            valid_trace_y, valid_trace_yhat = doValidation(epoch, net_model, test_loader, scaler)
             accuracy = np.mean(valid_trace_yhat.argmax(axis=1) == valid_trace_y)
             auc = roc_auc_score(valid_trace_y, valid_trace_yhat, multi_class="ovr",
                                 labels=[0, 1, 2, 3, 4, 5, 6, 7, 8])
@@ -91,13 +100,26 @@ def train(data_folder):
     print(models_info)
 
 
-def doValidation(epoch, net_model, test_loader):
+def fitX(df):
+    fit_set = MeanDatasetFull(df)
+    fit_loader = torch.utils.data.DataLoader(fit_set,
+                                             batch_size=32, shuffle=False,
+                                             num_workers=4
+                                             )
+    scaler = StandardScaler()
+    for batch_idx, (data, target) in enumerate(fit_loader):
+        scaler.fit(np.array(data.numpy(), dtype=float))
+    return scaler
+
+
+def doValidation(epoch, net_model, test_loader, scaler):
     net_model.eval()
     valid_batch_losses = []
     valid_trace_y = []
     valid_trace_yhat = []
     valid_loss = 1.0
     for batch_idx, (batches, target) in enumerate(test_loader):
+        batches = torch.tensor(scaler.transform(batches.numpy()))
         with torch.no_grad():
             target = target.to(device)
             batches = batches.float()
@@ -114,12 +136,13 @@ def doValidation(epoch, net_model, test_loader):
     return valid_trace_y, valid_trace_yhat
 
 
-def doTrain(epoch, loss_f, net_model, optimizer, train_loader, train_losses):
+def doTrain(epoch, loss_f, net_model, optimizer, train_loader, train_losses, scaler):
     net_model.train()
     trace_y = []
     trace_yhat = []
     batch_losses = []
     for batch_idx, (data, target) in enumerate(train_loader):
+        data = torch.tensor(scaler.transform(data.numpy()))
         optimizer.zero_grad()
         data = data.to(device)
         target = target.to(device)

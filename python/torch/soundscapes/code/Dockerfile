@@ -12,6 +12,9 @@ RUN pip install albumentations
 RUN pip install audiomentations
 RUN pip install efficientnet_pytorch
 RUN pip install -U audio-metadata
+RUN apt-get update
+RUN pip install SpecAugment
+RUN pip install -U matplotlib
 #RUN pip install torchaudio
 RUN mkdir /work
 COPY . /work
@@ -20,4 +23,5 @@ WORKDIR /work
 RUN chmod +x test.sh
 RUN chmod +x train.sh
 RUN chmod +x cnv.sh
+RUN export MPLBACKEND=TKAgg
 # Don't add any CMD or ENTRYPOINT!

@@ -9,6 +9,7 @@ from tqdm import tqdm
 # A,B,C,D,E,F,G,H,I
 from audioutils import get_random_sample_from_file, get_samples_from_file, samples_in_file, random_wave
 from config import PREPROCESS_PATH, AUGMENT, SAMPLE_RATE
+from utils import augment
 
 CATEGORIES = {'A': 0, 'B': 1, 'C': 2, 'D': 3, 'E': 4, 'F': 5, 'G': 6, 'H': 7, 'I': 8}
 
@@ -36,7 +37,7 @@ class SoundDatasetRandom(Dataset):
         row = self.df.iloc[self.index_map[index]]
         # read from preprocessed npy file
         sound_formatted = process_npy_file(PREPROCESS_PATH, row[0], self.model_params['SECONDS'])
-        return sound_formatted[np.newaxis, ...], self.labels[index]
+        return sound_formatted, self.labels[index]
 
     def __len__(self):
         return self.length
@@ -72,6 +73,26 @@ class MeanDatasetRandom(Dataset):
         return self.length
 
 
+class MeanDatasetFull(Dataset):
+    def __init__(self, df):
+        self.df = df
+        self.labels = []
+        self.data = []
+        for ind in tqdm(range(len(df))):
+            row = df.iloc[ind]
+            self.labels.append(CATEGORIES[row[1]])
+            path = os.path.join(PREPROCESS_PATH, row[0])
+            path = path + '.npy'
+            wave = np.load(path)
+            self.data.append(create_features(wave))
+
+    def __getitem__(self, index):
+        return torch.tensor(self.data[index]).float(), self.labels[index]
+
+    def __len__(self):
+        return len(self.data)
+
+
 def process_npy_file(path, name, seconds):
     path = os.path.join(path, name)
     path = path + '.npy'
@@ -98,8 +119,10 @@ def sampler_label_callback(dataset, index):
     return dataset.labels[index]
 
 
-def create_features(wave):
+def create_features(wave, aug=False):
     # rmse = librosa.feature.rmse(y=y)
+    if aug:
+        wave = augment(samples=wave, sample_rate=SAMPLE_RATE)
     result = []
     chroma_stft = librosa.feature.chroma_stft(y=wave, sr=SAMPLE_RATE)
     result.append(np.mean(chroma_stft))

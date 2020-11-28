@@ -1,11 +1,13 @@
 import math
+import random
 
 import librosa
 import numpy as np
 import torch
 
 from config import SAMPLE_RATE
-from utils import augment
+from spec_augment_pytorch import spec_augment
+from utils import augment, augment_noise
 
 
 def spec_to_image(spec, eps=1e-6):
@@ -79,10 +81,16 @@ def get_samples_from_file(npy_file_path, seconds, aug=False, n_fft=2048, hop_len
 
 def get_random_sample_from_file(npy_file_path, seconds, aug=False, n_fft=2048, hop_length=512, n_mels=128, fmin=20,
                                 fmax=8300):
-    cropped_wave = random_wave(aug, npy_file_path, seconds)
+    cropped_wave = random_wave(False, npy_file_path, seconds)
+    if True and prob(70):
+        cropped_wave = augment_noise(samples=cropped_wave, sample_rate=SAMPLE_RATE)
     spec = librosa.feature.melspectrogram(cropped_wave, sr=SAMPLE_RATE, n_fft=n_fft,
                                           hop_length=hop_length, n_mels=n_mels, fmin=fmin, fmax=fmax)
-    return torch.from_numpy(spec)
+    spec = torch.from_numpy(spec)
+    spec = spec[np.newaxis, ...]
+    if True and prob(90):
+        spec = spec_augment(spec)
+    return spec
 
 
 def random_wave(aug, npy_file_path, seconds):
@@ -126,3 +134,11 @@ def get_one_sample_from_file(npy_file_path, n_fft=2048, hop_length=512, n_mels=1
     spec = librosa.feature.melspectrogram(wave, sr=SAMPLE_RATE, n_fft=n_fft,
                                           hop_length=hop_length, n_mels=n_mels, fmin=fmin, fmax=fmax)
     return torch.from_numpy(spec)
+
+
+def prob(percent):
+    zufall = random.randrange(0, 100)
+    if zufall < percent:
+        return True
+    else:
+        return False
